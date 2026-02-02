@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Flag Battle">
+    <link rel="manifest"
+        href="data:application/json;base64,ewogICJuYW1lIjogIkZsYWcgQmF0dGxlIFJveWFsZSAtIEFkdmFuY2VkIiwKICAic2hvcnRfbmFtZSI6ICJGbGFnIEJhdHRsZSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJmdWxsc2NyZWVuIiwKICAib3JpZW50YXRpb24iOiAicG9ydHJhaXQiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwNTA1MDUiLAogICJ0aGVtZV9jb2xvciI6ICIjMDUwNTA1IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhkcFpIUm9QU0l4T1RJaUlHaGxhV2RvZEQwaU1Ua3lJajQ4Y21WamRDQjNhV1IwYUQwaU1Ua3lJaUJvWldsbmFIUTlJakU1TWlJZ1ptbHNiRDBpSXpKbFkyTmpOeklpTHo0OGRHVjRkQ0I0UFNJNU5pSWdlVDBpT1RZaUlIUmxlSFF0WVc1amFHOXlQU0p0YVdSa2JHVWlJR1pwYkd3OUlpTm1abVlpSUdadmJuUXRabUZ0YVd4NVBTSnRiMjV2YzNCaFkyVWlJR1p2Ym5RdGMybDZaVDBpTkRBaVBpOS9MakF2TDJScGRqNDhMM1JsZUhRK1BDOXpkbWMrIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIgogICAgfQogIF0KfQ==">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzJlY2M3MSIvPjx0ZXh0IHg9Ijk2IiB5PSI5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSI0MCI+8J+PsPC8gzwvdGV4dD48L3N2Zz4=">
+    <title>Flag Battle Royale - Advanced Edition</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div id="game-area">
+        <div id="winner-bg"></div>
+        <canvas id="particle-canvas"></canvas>
+    </div>
+    <div id="graveyard"></div>
+
+    <div id="ui-layer">
+        <div class="counter-box">🏳️ Alive: <span id="counter">0</span></div>
+        <div class="stats-box">
+            <div>🎯 Round: <span id="round-counter">1</span></div>
+            <div>⏱️ <span id="timer">0:00</span></div>
+        </div>
+    </div>
+
+    <div id="powerup-display"></div>
+
+    <div id="music-start-hint">🎵 Click anywhere to start music</div>
+
+    <div id="settings-btn" onclick="openSettings()">⚙️</div>
+    <div id="stats-btn" onclick="openStats()">📊</div>
+
+    <div id="settings-modal">
+        <button class="modal-close-btn" onclick="closeSettings()" title="বন্ধ করুন">✕</button>
+        <h2>⚙️ গেম সেটিংস</h2>
+
+        <label class="file-upload">
+            🎵 ব্যাকগ্রাউন্ড মিউজিক যোগ করুন
+            <input type="file" id="song-input" accept="audio/*" style="display: none;">
+        </label>
+
+        <div class="control-group">
+            <label>🔊 গেম সাউন্ড ভলিউম: <span id="game-vol-val">50</span>% <span class="volume-indicator"
+                    id="game-vol-bars"></span></label>
+            <input type="range" id="game-vol-slider" min="0" max="100" step="5" value="50">
+        </div>
+
+        <div class="control-group">
+            <label>🎵 মিউজিক ভলিউম: <span id="music-vol-val">30</span>% <span class="volume-indicator"
+                    id="music-vol-bars"></span></label>
+            <input type="range" id="music-vol-slider" min="0" max="100" step="5" value="30">
+        </div>
+
+        <div class="control-group">
+            <label>🎨 এরিনা কালার</label>
+            <div class="color-picker-wrapper">
+                <input type="color" id="arena-color" class="color-picker" value="#2ecc71">
+                <div class="color-preset" style="background: #2ecc71;" onclick="setArenaColor('#2ecc71')"></div>
+                <div class="color-preset" style="background: #e74c3c;" onclick="setArenaColor('#e74c3c')"></div>
+                <div class="color-preset" style="background: #3498db;" onclick="setArenaColor('#3498db')"></div>
+                <div class="color-preset" style="background: #f39c12;" onclick="setArenaColor('#f39c12')"></div>
+                <div class="color-preset" style="background: #9b59b6;" onclick="setArenaColor('#9b59b6')"></div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>🌈 ব্যাকগ্রাউন্ড কালার</label>
+            <div class="color-picker-wrapper">
+                <input type="color" id="bg-color" class="color-picker" value="#000000">
+                <div class="color-preset" style="background: #000000;" onclick="setBgColor('#000000')"></div>
+                <div class="color-preset" style="background: #1a1a2e;" onclick="setBgColor('#1a1a2e')"></div>
+                <div class="color-preset" style="background: #0f3460;" onclick="setBgColor('#0f3460')"></div>
+                <div class="color-preset" style="background: #16213e;" onclick="setBgColor('#16213e')"></div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>🔴 এরিনা সাইজ: <span id="circle-val">44</span>%</label>
+            <input type="range" id="circle-slider" min="30" max="60" step="1" value="44">
+        </div>
+
+        <div class="control-group">
+            <label>🏳️ ফ্ল্যাগ সংখ্যা: <span id="count-val">40</span></label>
+            <input type="range" id="count-slider" min="10" max="60" step="5" value="40">
+        </div>
+
+        <div class="control-group">
+            <label>🚀 গ্রাভিটি: <span id="grav-val">1.35</span></label>
+            <input type="range" id="grav-slider" min="0.5" max="3.0" step="0.1" value="1.35">
+        </div>
+
+        <div class="control-group">
+            <label>🔄 ঘূর্ণন স্পিড: <span id="speed-val">1.8</span></label>
+            <input type="range" id="speed-slider" min="0.5" max="5.0" step="0.1" value="1.8">
+        </div>
+
+        <div class="control-group">
+            <label>🏀 বাউন্স: <span id="bounce-val">1.2</span></label>
+            <input type="range" id="bounce-slider" min="0.0" max="1.3" step="0.05" value="1.2">
+        </div>
+
+        <div class="control-group">
+            <label>🧱 দেয়াল পুরুত্ব: <span id="thick-val">20</span></label>
+            <input type="range" id="thick-slider" min="5" max="100" step="1" value="20">
+        </div>
+
+        <div class="control-group">
+            <label>🔍 ফ্ল্যাগ সাইজ: <span id="size-val">1.0</span>x</label>
+            <input type="range" id="size-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="control-group">
+            <label>💨 এয়ার ড্র্যাগ: <span id="drag-val">0.00</span></label>
+            <input type="range" id="drag-slider" min="0.00" max="0.05" step="0.005" value="0.00">
+        </div>
+
+        <div class="control-group">
+            <label>🎲 র‍্যান্ডম ফোর্স: <span id="force-val">0.1</span></label>
+            <input type="range" id="force-slider" min="0.0" max="0.3" step="0.05" value="0.1">
+        </div>
+
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="powerups-toggle" checked>
+                <span>⚡ পাওয়ার-আপ চালু করুন</span>
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="winner-bg-toggle" checked>
+                <span>🏆 বিজয়ী ব্যাকগ্রাউন্ড</span>
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="particles-toggle" checked>
+                <span>✨ পার্টিকেল ইফেক্ট</span>
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="sound-toggle" checked>
+                <span>🔊 সাউন্ড ইফেক্ট</span>
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="glow-toggle" checked>
+                <span>💫 এরিনা গ্লো ইফেক্ট</span>
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="trails-toggle" checked>
+                <span>🌠 ফ্ল্যাগ ট্রেইল ইফেক্ট</span>
+            </label>
+        </div>
+
+        <button class="reset-settings-btn" onclick="resetSettings()">🔄 ডিফল্ট সেটিংস রিস্টোর করুন</button>
+        <button class="close-btn" onclick="closeSettings()">✓ সেভ করুন</button>
+    </div>
+
+    <div id="stats-modal">
+        <button class="modal-close-btn" onclick="closeStats()" title="বন্ধ করুন">✕</button>
+        <h2>📊 স্ট্যাটিস্টিক্স</h2>
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>দেশ</th>
+                    <th>জয়</th>
+                </tr>
+            </thead>
+            <tbody id="stats-tbody">
+            </tbody>
+        </table>
+        <button class="reset-stats-btn" onclick="resetStats()">🗑️ রিসেট করুন</button>
+        <button class="close-btn" onclick="closeStats()">বন্ধ করুন</button>
+    </div>
+
+    <div id="winner-screen">
+        <img id="winner-flag-img" src="" alt="Winner">
+        <div id="winner-text">WINNER</div>
+        <div id="winner-stats"></div>
+        <div id="countdown-text">3</div>
+    </div>
+
+    <audio id="bg-music" loop></audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="config.js"></script>
+    <script src="audio.js"></script>
+    <script src="utils.js"></script>
+    <script src="game.js"></script>
+
+</body>
+
+</html>

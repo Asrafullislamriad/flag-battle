@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            width: 220px;
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 15px;
+            margin: 0;
+        }
+
+        h2 {
+            margin: 0 0 15px 0;
+            color: #2ecc71;
+            font-size: 16px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #2ecc71;
+            padding-bottom: 8px;
+        }
+
+        .stat-box {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+        }
+
+        .label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .count {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd700;
+            line-height: 1;
+        }
+
+        .recent-section {
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333;
+            padding: 10px;
+        }
+
+        .recent-header {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .list li {
+            padding: 4px 0;
+            font-size: 13px;
+            color: #ddd;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+        }
+
+        .list li:last-child {
+            border-bottom: none;
+        }
+
+        .list li:first-child {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .index {
+            color: #555;
+            font-size: 10px;
+            margin-right: 8px;
+            width: 15px;
+        }
+
+        #status {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 10px;
+            color: #555;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Flag Battle Bridge</h2>
+
+    <div class="stat-box">
+        <span class="label">Total Collected</span>
+        <span id="total" class="count">0</span>
+    </div>
+
+    <div class="recent-section">
+        <div class="recent-header">Recent Comments</div>
+        <ul id="recentList" class="list">
+            <li style="color: #666; justify-content: center;">Waiting for chats...</li>
+        </ul>
+    </div>
+
+    <div id="status">Waiting for data...</div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
