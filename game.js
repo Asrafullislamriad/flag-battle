@@ -181,26 +181,100 @@ function handleCollisions(event) {
 }
 
 // Rigging / Live Stream System
+// Rigging / Live Stream System
 window.winnerQueue = [];
-window.addWinner = function (countryNameOrCode) {
-    // Normalize input
-    const term = countryNameOrCode.toLowerCase().trim();
 
-    // Find matching country
-    const country = ALL_COUNTRIES.find(c =>
-        c.name.toLowerCase() === term ||
-        c.code.toLowerCase() === term
-    );
+// Multi-language Alias Map
+const countryAliases = {
+    // Bengali
+    'বাংলাদেশ': 'bd', 'বাংলা': 'bd', 'bangladesh': 'bd',
+    'ভারত': 'in', 'ইন্ডিয়া': 'in', 'হিন্দুস্তান': 'in',
+    'পাকিস্তান': 'pk', 'পাক': 'pk',
+    'সৌদি': 'sa', 'সৌদি আরব': 'sa',
+    'ফিলিস্তিন': 'ps', 'প্যালেস্টাইন': 'ps',
+    'ব্রাজিল': 'br', 'আর্জেন্টিনা': 'ar', 'জার্মানি': 'de',
+    'রাশিয়া': 'ru', 'ইউক্রেন': 'ua',
+    'নেপাল': 'np', 'ভুটান': 'bt',
 
+    // Russian (Cyrillic)
+    'россия': 'ru', 'рф': 'ru',
+    'украина': 'ua',
+    'беларусь': 'by', 'казахстан': 'kz',
+    'германия': 'de', 'сша': 'us',
+
+    // Hindi/Urdu
+    'भारत': 'in', 'hindustan': 'in',
+    'pakistan': 'pk',
+
+    // Common Abbreviations / Nicknames
+    'usa': 'us', 'america': 'us', 'murica': 'us',
+    'uk': 'gb', 'england': 'gb', 'britain': 'gb',
+    'uae': 'ae', 'dubai': 'ae',
+    'ksa': 'sa',
+    'nz': 'nz',
+    'fra': 'fr'
+};
+
+// Helper to add valid code to queue
+function queueWinner(code, sourceText, method) {
+    const country = ALL_COUNTRIES.find(c => c.code === code);
     if (country) {
-        window.winnerQueue.push(country.code);
-        console.log(`✅ Added to queue: ${country.name}`);
-        // Visual feedback could be added here
+        window.winnerQueue.push(code);
+        console.log(`✅ Added to queue: ${country.name} (${method}) [Input: "${sourceText}"]`);
         return true;
-    } else {
-        console.warn(`❌ Country not found: ${countryNameOrCode}`);
-        return false;
     }
+    return false;
+}
+
+window.addWinner = function (inputText) {
+    if (!inputText) return false;
+    let text = inputText.toLowerCase().trim();
+
+    // 1. TOKEN SEARCH: Look for country names inside the sentence
+    // Split by spaces and punctuation
+    const words = text.split(/[\s,.!?]+/);
+
+    for (let word of words) {
+        // Check Alias Map
+        if (countryAliases[word]) {
+            return queueWinner(countryAliases[word], inputText, "Alias Match");
+        }
+        // Check Direct Name/Code Match
+        const exactMatch = ALL_COUNTRIES.find(c =>
+            c.code === word || c.name.toLowerCase() === word
+        );
+        if (exactMatch) {
+            return queueWinner(exactMatch.code, inputText, "Exact Match");
+        }
+    }
+
+    // 2. LANGUAGE FALLBACK: If no country named, guess by Script/Language
+
+    // Bengali -> Bangladesh
+    if (/[\u0980-\u09FF]/.test(inputText)) {
+        return queueWinner('bd', inputText, "Language Detected: Bengali");
+    }
+
+    // Cyrillic (Russian/Ukrainian) -> Russia (Default)
+    if (/[\u0400-\u04FF]/.test(inputText)) {
+        // Could be Ukraine if specifically spelled, but alias map handles that. 
+        // Defaulting Cyrillic to Russia for now.
+        return queueWinner('ru', inputText, "Script Detected: Cyrillic");
+    }
+
+    // Devanagari (Hindi) -> India
+    if (/[\u0900-\u097F]/.test(inputText)) {
+        return queueWinner('in', inputText, "Script Detected: Hindi");
+    }
+
+    // Arabic -> Saudi Arabia (Default)
+    if (/[\u0600-\u06FF]/.test(inputText)) {
+        return queueWinner('sa', inputText, "Script Detected: Arabic");
+    }
+
+    // No match found
+    // console.log(`⏩ Ignored: "${inputText}" (No country or recognizable script)`);
+    return false;
 };
 
 // Start new round
