@@ -42,13 +42,22 @@ function scanChats() {
         }
 
         if (text) {
-            console.log(`🔹 New Chat: ${text}`);
+            // Capture User Details
+            const authorName = node.querySelector('#author-name')?.textContent?.trim() || "Anonymous";
+            const authorImg = node.querySelector('#img')?.src || "";
+
+            console.log(`🔹 New Chat: ${authorName}: ${text}`);
 
             // Visual green border
             node.style.borderLeft = "4px solid #2ecc71";
 
             // Send to background
-            chrome.runtime.sendMessage({ type: 'NEW_CHAT', country: text });
+            chrome.runtime.sendMessage({
+                type: 'NEW_CHAT',
+                country: text,
+                username: authorName,
+                profilePic: authorImg
+            });
         }
     });
 }

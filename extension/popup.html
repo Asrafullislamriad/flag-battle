@@ -132,6 +132,27 @@
 
     <div id="status">Waiting for data...</div>
 
+    <!-- Test Data Panel -->
+    <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
+        <button id="toggleTest"
+            style="width: 100%; background: #333; color: #fff; border: none; padding: 5px; cursor: pointer; border-radius: 4px;">🛠️
+            Test Mode</button>
+
+        <div id="testPanel" style="display: none; margin-top: 10px;">
+            <input type="text" id="testCountry" placeholder="Country (e.g. bd, india)" value="uk"
+                style="width: 100%; margin-bottom: 5px; background: #222; border: 1px solid #444; color: #fff; padding: 5px; box-sizing: border-box;">
+            <input type="text" id="testUser" placeholder="Username" value="DummyUser"
+                style="width: 100%; margin-bottom: 5px; background: #222; border: 1px solid #444; color: #fff; padding: 5px; box-sizing: border-box;">
+            <input type="text" id="testPic" placeholder="Profile Pic URL"
+                value="https://yt4.ggpht.com/Twxj-F6JgW6Utz04FVV3JRxSVPPSS2Qvt7ZioUAZ97J7KXSLC8H7k3OSaQ3Xi0w96Zi957I_=s32-c-k-c0x00ffffff-no-rj"
+                style="width: 100%; margin-bottom: 5px; background: #222; border: 1px solid #444; color: #fff; padding: 5px; box-sizing: border-box;">
+
+            <button id="sendTest"
+                style="width: 100%; background: #e67e22; color: #fff; border: none; padding: 8px; cursor: pointer; font-weight: bold; border-radius: 4px;">🚀
+                Send Test Data</button>
+        </div>
+    </div>
+
     <script src="popup.js"></script>
 </body>
 

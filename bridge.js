@@ -6,8 +6,9 @@ let winnerQueue = [];
 const server = http.createServer((req, res) => {
     // Enable CORS (Allows Game and YouTube to connect)
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight
 
     // Handle Pre-flight requests
     if (req.method === 'OPTIONS') {
@@ -25,8 +26,9 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 if (data.country) {
-                    console.log('📥 Chat Winner:', data.country);
-                    winnerQueue.push(data.country);
+                    // Store full object: { country, username, profilePic }
+                    console.log('📥 Chat Winner:', data.country, 'by', data.username);
+                    winnerQueue.push(data);
                 }
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ status: 'ok', queueLength: winnerQueue.length }));
@@ -54,10 +56,12 @@ const server = http.createServer((req, res) => {
         // No, game should pull from server to fill local queue.
 
         // Let's make it POP:
-        const nextWinner = winnerQueue.shift() || null;
+        // Return ALL pending winners and clear queue
+        const batch = [...winnerQueue];
+        winnerQueue = []; // Clear immediately
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ winner: nextWinner }));
+        res.end(JSON.stringify({ batch: batch }));
     } else {
         res.writeHead(404);
         res.end('Not Found');

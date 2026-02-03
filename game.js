@@ -276,19 +276,80 @@ const countryAliases = {
 };
 
 // Helper to add valid code to queue
-function queueWinner(code, sourceText, method) {
-    const country = ALL_COUNTRIES.find(c => c.code === code);
-    if (country) {
-        window.winnerQueue.push(code);
-        console.log(`✅ Added to queue: ${country.name} (${method}) [Input: "${sourceText}"]`);
+// Helper to add valid code to queue OR spawn dynamically
+function queueWinner(requestData, method) {
+    let reqCode, reqUser;
+
+    try {
+        if (typeof requestData === 'object' && requestData !== null) {
+            reqCode = requestData.country;
+            reqUser = { name: requestData.username, pic: requestData.profilePic };
+        } else {
+            reqCode = requestData;
+            reqUser = null;
+        }
+
+        if (!reqCode || typeof reqCode !== 'string') return false;
+
+        const country = ALL_COUNTRIES.find(c => c.code === reqCode);
+        if (!country) return false;
+
+        // DYNAMIC SPAWN LOGIC (Simplified & Forced)
+        if (!isGameOver) {
+            console.log(`🚀 ATTEMPTING LIVE SPAWN: ${country.name}`); // Debug
+
+            spawnSingleFlag(country, reqUser);
+
+            // Save request for winner screen
+            if (window.currentRoundRequests) {
+                window.currentRoundRequests.push({ code: reqCode, user: reqUser });
+            }
+            return true;
+        }
+
+        // If Game IS Over
+        window.winnerQueue.push(requestData);
+        console.log(`✅ Game Over/Inactive. Added to Queue: ${country.name}`);
         return true;
+
+    } catch (e) {
+        console.error("QueueWinner Error:", e);
+        return false;
     }
-    return false;
 }
 
-window.addWinner = function (inputText) {
-    if (!inputText) return false;
-    let text = inputText.toLowerCase().trim();
+window.addWinner = function (inputData) {
+    let rawText = "";
+    let userInfo = null;
+
+    // 1. Extract Text & User Info
+    if (typeof inputData === 'object' && inputData !== null && inputData.country) {
+        rawText = inputData.country; // The chat message text
+        userInfo = {
+            username: inputData.username || "Anonymous",
+            profilePic: inputData.profilePic || ""
+        };
+    } else if (typeof inputData === 'string') {
+        rawText = inputData;
+    } else {
+        return false;
+    }
+
+    if (!rawText) return false;
+    let text = rawText.toLowerCase().trim();
+
+    // Helper Function to Queue Resolved Country with User Info
+    const doQueue = (code, method) => {
+        if (userInfo) {
+            return queueWinner({
+                country: code,
+                username: userInfo.username,
+                profilePic: userInfo.profilePic
+            }, method);
+        } else {
+            return queueWinner(code, method);
+        }
+    };
 
     // --- CHAOS COMMANDS ---
     if (text === '!bomb' || text === '!reset') {
@@ -300,75 +361,42 @@ window.addWinner = function (inputText) {
         return true;
     }
 
-    // 0. FLAG EMOJI SEARCH (High Priority)
-    // Detect Unicode Flag Sequences (Region Indicator Symbols)
-    // \uD83C\uDDE6 (A) to \uD83C\uDDFF (Z)
+    // 0. FLAG EMOJI SEARCH 
     const flagRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/g;
-    const foundFlags = inputText.match(flagRegex);
+    const foundFlags = rawText.match(flagRegex);
 
     if (foundFlags) {
         for (const flag of foundFlags) {
-            // Convert Emoji to Country Code
-            // 🇧🇩 is composed of two code points. value - 127397 = ASCII char
             const points = [...flag].map(c => c.codePointAt(0));
             if (points.length === 2) {
                 const char1 = String.fromCharCode(points[0] - 127397);
                 const char2 = String.fromCharCode(points[1] - 127397);
                 const code = (char1 + char2).toLowerCase();
-
-                // Check if this country exists in our game
-                const country = ALL_COUNTRIES.find(c => c.code === code);
-                if (country) {
-                    return queueWinner(code, inputText, "Emoji Flag Detected 🚩");
+                if (ALL_COUNTRIES.find(c => c.code === code)) {
+                    return doQueue(code, "Emoji");
                 }
             }
         }
     }
 
-    // 1. TOKEN SEARCH: Look for country names inside the sentence
-    // Split by spaces and punctuation
+    // 1. TOKEN SEARCH (Aliases & Exact Match)
     const words = text.split(/[\s,.!?]+/);
-
     for (let word of words) {
-        // Check Alias Map
         if (countryAliases[word]) {
-            return queueWinner(countryAliases[word], inputText, "Alias Match");
+            return doQueue(countryAliases[word], "Alias");
         }
-        // Check Direct Name/Code Match
-        const exactMatch = ALL_COUNTRIES.find(c =>
-            c.code === word || c.name.toLowerCase() === word
-        );
+        const exactMatch = ALL_COUNTRIES.find(c => c.code === word || c.name.toLowerCase() === word);
         if (exactMatch) {
-            return queueWinner(exactMatch.code, inputText, "Exact Match");
+            return doQueue(exactMatch.code, "Exact");
         }
     }
 
-    // 2. LANGUAGE FALLBACK: If no country named, guess by Script/Language
+    // 2. LANGUAGE FALLBACK
+    if (/[\u0980-\u09FF]/.test(rawText)) return doQueue('bd', "Lang:Bengali");
+    if (/[\u0400-\u04FF]/.test(rawText)) return doQueue('ru', "Lang:Cyrillic");
+    if (/[\u0900-\u097F]/.test(rawText)) return doQueue('in', "Lang:Hindi");
+    if (/[\u0600-\u06FF]/.test(rawText)) return doQueue('sa', "Lang:Arabic");
 
-    // Bengali -> Bangladesh
-    if (/[\u0980-\u09FF]/.test(inputText)) {
-        return queueWinner('bd', inputText, "Language Detected: Bengali");
-    }
-
-    // Cyrillic (Russian/Ukrainian) -> Russia (Default)
-    if (/[\u0400-\u04FF]/.test(inputText)) {
-        // Could be Ukraine if specifically spelled, but alias map handles that. 
-        // Defaulting Cyrillic to Russia for now.
-        return queueWinner('ru', inputText, "Script Detected: Cyrillic");
-    }
-
-    // Devanagari (Hindi) -> India
-    if (/[\u0900-\u097F]/.test(inputText)) {
-        return queueWinner('in', inputText, "Script Detected: Hindi");
-    }
-
-    // Arabic -> Saudi Arabia (Default)
-    if (/[\u0600-\u06FF]/.test(inputText)) {
-        return queueWinner('sa', inputText, "Script Detected: Arabic");
-    }
-
-    // No match found
-    // console.log(`⏩ Ignored: "${inputText}" (No country or recognizable script)`);
     return false;
 };
 
@@ -406,9 +434,26 @@ function startNewRound() {
         }
 
         // Check for User Requests (Live Stream Priority)
-        // Get all unique requested countries from the queue
-        const requestedCodes = [...new Set(window.winnerQueue)];
-        window.winnerQueue = []; // Clear queue as we are processing them now
+        let uniqueRequests = [];
+        let seenCodes = new Set();
+
+        window.winnerQueue.forEach(item => {
+            const code = (typeof item === 'object' && item.country) ? item.country : item;
+            const user = (typeof item === 'object' && item.username) ? { name: item.username, pic: item.profilePic } : null;
+
+            // Allow duplicates: If 10 people ask for BD, spawn 10 BD flags.
+            if (typeof code === 'string') {
+                // seenCodes.add(code); // No longer needed
+                uniqueRequests.push({ code, user });
+            }
+        });
+
+        const requestedCodes = uniqueRequests.map(r => r.code);
+
+        // Save for Winner Screen Logic
+        window.currentRoundRequests = [...uniqueRequests];
+
+        window.winnerQueue = [];
 
         console.log(`%c 🎮 Viewer Battle Royale: ${requestedCodes.length} countries queued`, 'color: #ffd700; font-weight: bold;');
 
@@ -416,10 +461,11 @@ function startNewRound() {
         const pool = [];
 
         // 1. Add Requested Countries (Priority)
-        requestedCodes.forEach(code => {
-            const country = ALL_COUNTRIES.find(c => c.code === code);
+        uniqueRequests.forEach(req => {
+            const country = ALL_COUNTRIES.find(c => c.code === req.code);
             if (country) {
-                pool.push({ ...country, isUserRequest: true });
+                // Attach user data to the country object temporarily for this round
+                pool.push({ ...country, isUserRequest: true, userData: req.user });
             }
         });
 
@@ -532,6 +578,16 @@ function startNewRound() {
                     body.render.strokeStyle = '#ffd700'; // Gold border for viewer flags
                     body.render.lineWidth = 3;
                     body.render.opacity = 1;
+                    // Store user data in body
+                    body.userData = data.country.userData;
+
+                    // Preload Profile Pic
+                    if (body.userData && body.userData.pic) {
+                        const userImg = new Image();
+                        userImg.crossOrigin = 'anonymous';
+                        userImg.src = body.userData.pic;
+                        body.userImg = userImg;
+                    }
                 }
 
                 Matter.Composite.add(engine.world, body);
@@ -972,6 +1028,47 @@ function gameRender() {
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
+
+            // Draw User Name (If Viewer Request)
+            if (b.isUserRequest && b.userData && b.userData.name) {
+                ctx.save();
+                ctx.rotate(-b.angle); // Keep text horizontal
+                ctx.font = "bold 14px Arial";
+                ctx.fillStyle = "#fff";
+                ctx.strokeStyle = "#000";
+                ctx.lineWidth = 3;
+                ctx.textAlign = "center";
+
+                // Draw Profile Pic (if available)
+                if (b.userImg && b.userImg.complete && b.userImg.naturalWidth > 0) {
+                    const size = 24;
+                    const py = b.h / 2 + 15;
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(0, py, size / 2, 0, Math.PI * 2);
+                    ctx.closePath();
+                    ctx.clip();
+                    ctx.drawImage(b.userImg, -size / 2, py - size / 2, size, size);
+
+                    // Draw white border around pic
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Helper: Move text down
+                    ctx.translate(0, 25);
+                }
+
+                // Draw name below flag
+                const name = b.userData.name.length > 10 ? b.userData.name.substring(0, 8) + '..' : b.userData.name;
+                ctx.strokeText(name, 0, b.h / 2 + 20);
+                ctx.fillText(name, 0, b.h / 2 + 20);
+
+                ctx.restore();
+            }
+
             ctx.restore();
         });
     } catch (e) {
@@ -981,6 +1078,7 @@ function gameRender() {
 
 // Winner handling
 function handleWinner(winner) {
+    if (isGameOver) return; // Prevent multiple wins/score adds
     try {
         isGameOver = true;
         if (runner) runner.enabled = false;
@@ -998,7 +1096,11 @@ function handleWinner(winner) {
         // Update Live Session Leaderboard
         if (winner.country) {
             const code = winner.country.code;
-            sessionStats[code] = (sessionStats[code] || 0) + 1;
+            // Count alive flags of winning country
+            const aliveCount = flags.filter(f => f.country && f.country.code === code).length;
+            const pointsToAdd = aliveCount > 0 ? aliveCount : 1;
+
+            sessionStats[code] = (sessionStats[code] || 0) + pointsToAdd;
             updateLeaderboardUI();
         }
 
@@ -1061,6 +1163,50 @@ function handleWinner(winner) {
 
         // Total Wins hidden as requested
         statsDiv.innerText = "";
+
+        // Populate Supporters List in Winner Screen
+        const supportersDiv = document.getElementById('winner-supporters');
+        if (supportersDiv) {
+            supportersDiv.innerHTML = ''; // Reset previous
+
+            // Check current round requests
+            if (window.currentRoundRequests && window.currentRoundRequests.length > 0) {
+                // Filter users who requested this winning country
+                // Request object struct: { code: 'us', user: {name: '...', pic: '...'} }
+                const supporters = window.currentRoundRequests.filter(req => req.code === winner.country.code && req.user);
+
+                // Show top 8 supporters to prevent overflow
+                const topSupporters = supporters.slice(0, 8);
+
+                if (topSupporters.length > 0) {
+                    const header = document.createElement('div');
+                    header.innerText = `🏆 SUPPORTERS (${supporters.length})`;
+                    header.style.color = "#ffd700";
+                    header.style.fontWeight = "bold";
+                    header.style.marginBottom = "10px";
+                    header.style.borderBottom = "2px solid #ffd700";
+                    supportersDiv.appendChild(header);
+                }
+
+                topSupporters.forEach(sup => {
+                    const item = document.createElement('div');
+                    item.className = 'supporter-item';
+
+                    const avatarUrl = sup.user.pic || '';
+                    // Sanitize name
+                    const cleanName = sup.user.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                    // Fallback image source if empty
+                    const imgSource = avatarUrl ? avatarUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=random`;
+
+                    item.innerHTML = `
+                        <img src="${imgSource}" class="supporter-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=random'">
+                        <span>${cleanName}</span>
+                    `;
+                    supportersDiv.appendChild(item);
+                });
+            }
+        }
 
         screen.classList.add('visible');
 
@@ -1148,6 +1294,66 @@ function updateCounter() {
         el.innerText = flags.length;
         if (flags.length <= 5) el.style.color = '#e74c3c';
         else el.style.color = '#fff';
+    }
+}
+
+
+// Dynamic Spawn Function
+function spawnSingleFlag(country, userData) {
+    const fixedBase = Math.min(gameW, gameH) * 0.09;
+    const flagW = fixedBase * config.scale;
+    const flagH = flagW * 0.66;
+    const centerX = gameW / 2;
+    const centerY = gameH / 2;
+    // Spawn from top area
+    const x = centerX + (Math.random() - 0.5) * (arenaRadius * 0.5);
+    const y = centerY - (arenaRadius * 0.6);
+
+    const loadAndCreate = (img) => {
+        const body = Matter.Bodies.rectangle(x, y, flagW, flagH, {
+            restitution: config.bounce,
+            friction: 0.0,
+            frictionAir: config.airDrag,
+            density: 0.005,
+            inertia: Infinity,
+            angle: 0,
+            render: { opacity: 1, strokeStyle: '#ffd700', lineWidth: 3 }
+        });
+
+        body.country = country;
+        body.img = img;
+        body.w = flagW;
+        body.h = flagH;
+        body.hasShield = false;
+
+        body.isUserRequest = true;
+        if (userData) {
+            body.userData = userData;
+            if (userData.pic) {
+                const i = new Image();
+                i.crossOrigin = 'anonymous';
+                i.src = userData.pic;
+                body.userImg = i;
+            }
+        }
+
+        Matter.Composite.add(engine.world, body);
+        flags.push(body);
+        updateCounter();
+        createParticles(x, y, '#ffd700', 30);
+        playTone(800, 0.15, 'sine');
+    };
+
+    if (flagCache[country.code]) {
+        loadAndCreate(flagCache[country.code]);
+    } else {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            flagCache[country.code] = img;
+            loadAndCreate(img);
+        };
+        img.src = `https://flagcdn.com/w160/${country.code}.png`;
     }
 }
 
@@ -1430,8 +1636,19 @@ setInterval(() => {
                 console.log('%c 🟢 Bridge Connected: LIVE CHAT ACTIVE ', 'background: #2ecc71; color: #000; font-size: 14px; font-weight: bold; border-radius: 4px;');
             }
 
-            if (data.winner) {
-                console.log(`%c [${new Date().toLocaleTimeString()}] 👑 Priority Winner Received: ${data.winner.toUpperCase()} `, 'background: #ffd700; color: #000; font-size: 12px;');
+            if (data.batch && Array.isArray(data.batch)) {
+                if (data.batch.length > 0) {
+                    console.log(`%c [${new Date().toLocaleTimeString()}] 📦 Batch Received: ${data.batch.length} items `, 'background: #3498db; color: #fff; font-size: 12px;');
+                    data.batch.forEach((winner, index) => {
+                        const logName = (typeof winner === 'object' && winner.country) ? winner.country : String(winner);
+                        console.log(`   -> [${index + 1}/${data.batch.length}] Processing: ${String(logName).toUpperCase()}`);
+                        window.addWinner(winner);
+                    });
+                }
+            } else if (data.winner) {
+                // Legacy Single Item Support
+                const logName = (typeof data.winner === 'object' && data.winner.country) ? data.winner.country : data.winner;
+                console.log(`%c [${new Date().toLocaleTimeString()}] 👑 Priority Winner Received: ${String(logName).toUpperCase()} `, 'background: #ffd700; color: #000; font-size: 12px;');
                 window.addWinner(data.winner);
             }
 
@@ -1449,4 +1666,4 @@ setInterval(() => {
                 console.log('%c 🔴 Bridge Disconnected: Check node bridge.js ', 'background: #e74c3c; color: #fff; font-size: 14px; font-weight: bold; border-radius: 4px;');
             }
         });
-}, 2000); // Check every 2s
+}, 500); // Check every 0.5s (Faster Response)

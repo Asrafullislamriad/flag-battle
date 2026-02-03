@@ -19,7 +19,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         fetch('http://localhost:3000/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ country: country })
+            body: JSON.stringify({
+                country: country,
+                username: message.username,
+                profilePic: message.profilePic
+            })
         })
             .then(response => {
                 console.log(`📡 Sent to Game: ${country}`);

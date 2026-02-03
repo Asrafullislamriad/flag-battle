@@ -30,3 +30,31 @@ updateUI();
 chrome.storage.onChanged.addListener((changes, namespace) => {
     updateUI();
 });
+
+// --- Test Mode Logic ---
+document.getElementById('toggleTest').addEventListener('click', () => {
+    const panel = document.getElementById('testPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('sendTest').addEventListener('click', () => {
+    const country = document.getElementById('testCountry').value.trim();
+    const user = document.getElementById('testUser').value.trim();
+    const pic = document.getElementById('testPic').value.trim();
+
+    if (country) {
+        chrome.runtime.sendMessage({
+            type: 'NEW_CHAT',
+            country: country,
+            username: user,
+            profilePic: pic
+        }, () => {
+            const btn = document.getElementById('sendTest');
+            const originalText = btn.innerText;
+            btn.innerText = "✅ Sent!";
+            setTimeout(() => btn.innerText = originalText, 1000);
+        });
+    } else {
+        alert("Enter a country name!");
+    }
+});
