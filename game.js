@@ -49,8 +49,8 @@ function init() {
         resizeParticleCanvas();
 
         engine = Matter.Engine.create({
-            positionIterations: 10,
-            velocityIterations: 10
+            positionIterations: 50, // Extreme precision to stop tunneling
+            velocityIterations: 50
         });
         engine.world.gravity.y = config.gravity;
 
@@ -183,6 +183,66 @@ function handleCollisions(event) {
 // Rigging / Live Stream System
 // Rigging / Live Stream System
 window.winnerQueue = [];
+let sessionStats = {}; // { 'bd': 5, 'in': 3 }
+
+// Update UI
+function updateLeaderboardUI() {
+    const list = document.getElementById('leaderboard-list');
+    if (!list) return;
+
+    // Sort by wins
+    const sorted = Object.entries(sessionStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3); // Top 3 only
+
+    if (sorted.length === 0) {
+        list.innerHTML = '<li class="empty-list">No wins yet</li>';
+        return;
+    }
+
+    list.innerHTML = '';
+    sorted.forEach(([code, wins], index) => {
+        const country = ALL_COUNTRIES.find(c => c.code === code);
+        const name = country ? country.name : code;
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <div><span class="rank">#${index + 1}</span> <span class="name">${name}</span></div>
+            <span class="count">${wins}</span>
+        `;
+        list.appendChild(li);
+    });
+}
+
+// Chaos Commands
+function triggerShake() {
+    console.log("🌪️ EARTHQUAKE!");
+    const bodies = Matter.Composite.allBodies(engine.world);
+    bodies.forEach(body => {
+        if (!body.isStatic) {
+            Matter.Body.applyForce(body, body.position, {
+                x: (Math.random() - 0.5) * 0.5, // Strong horizontal shake
+                y: (Math.random() - 0.5) * 0.5  // Strong vertical shake
+            });
+        }
+    });
+}
+
+function resetLeaderboard() {
+    console.log("💣 LEADERBOARD NUKE!");
+    sessionStats = {};
+    updateLeaderboardUI();
+    // Visual shake effect on the leaderboard div
+    const el = document.getElementById('live-leaderboard');
+    if (el) {
+        el.style.transform = "scale(1.2) rotate(5deg)";
+        el.style.filter = "brightness(2) sepia(1) hue-rotate(-50deg) saturate(5)"; // Red flash
+        setTimeout(() => {
+            el.style.transform = "scale(1) rotate(0deg)";
+            el.style.filter = "none";
+        }, 300);
+    }
+}
 
 // Multi-language Alias Map
 const countryAliases = {
@@ -229,6 +289,41 @@ function queueWinner(code, sourceText, method) {
 window.addWinner = function (inputText) {
     if (!inputText) return false;
     let text = inputText.toLowerCase().trim();
+
+    // --- CHAOS COMMANDS ---
+    if (text === '!bomb' || text === '!reset') {
+        resetLeaderboard();
+        return true;
+    }
+    if (text === '!shake' || text === '!quake') {
+        triggerShake();
+        return true;
+    }
+
+    // 0. FLAG EMOJI SEARCH (High Priority)
+    // Detect Unicode Flag Sequences (Region Indicator Symbols)
+    // \uD83C\uDDE6 (A) to \uD83C\uDDFF (Z)
+    const flagRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/g;
+    const foundFlags = inputText.match(flagRegex);
+
+    if (foundFlags) {
+        for (const flag of foundFlags) {
+            // Convert Emoji to Country Code
+            // 🇧🇩 is composed of two code points. value - 127397 = ASCII char
+            const points = [...flag].map(c => c.codePointAt(0));
+            if (points.length === 2) {
+                const char1 = String.fromCharCode(points[0] - 127397);
+                const char2 = String.fromCharCode(points[1] - 127397);
+                const code = (char1 + char2).toLowerCase();
+
+                // Check if this country exists in our game
+                const country = ALL_COUNTRIES.find(c => c.code === code);
+                if (country) {
+                    return queueWinner(code, inputText, "Emoji Flag Detected 🚩");
+                }
+            }
+        }
+    }
 
     // 1. TOKEN SEARCH: Look for country names inside the sentence
     // Split by spaces and punctuation
@@ -310,28 +405,35 @@ function startNewRound() {
             safeCount = ALL_COUNTRIES.length;
         }
 
-        const pool = [...ALL_COUNTRIES];
-        // No duplication loop here anymore
-        const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, safeCount);
+        // Check for User Requests (Live Stream Priority)
+        // Get all unique requested countries from the queue
+        const requestedCodes = [...new Set(window.winnerQueue)];
+        window.winnerQueue = []; // Clear queue as we are processing them now
 
-        // Check for Rigged Winner (Live Stream)
-        let riggedCode = null;
-        if (window.winnerQueue.length > 0) {
-            riggedCode = window.winnerQueue.shift();
+        console.log(`%c 🎮 Viewer Battle Royale: ${requestedCodes.length} countries queued`, 'color: #ffd700; font-weight: bold;');
 
-            // Ensure pending winner is in the game
-            const exists = shuffled.find(c => c.code === riggedCode);
-            if (!exists) {
-                const target = ALL_COUNTRIES.find(c => c.code === riggedCode);
-                if (target) {
-                    shuffled[shuffled.length - 1] = target; // Force inject into pool
-                }
-                if (target) {
-                    shuffled[shuffled.length - 1] = target; // Force inject into pool
-                }
+        // Pool Construction
+        const pool = [];
+
+        // 1. Add Requested Countries (Priority)
+        requestedCodes.forEach(code => {
+            const country = ALL_COUNTRIES.find(c => c.code === code);
+            if (country) {
+                pool.push({ ...country, isUserRequest: true });
             }
-            console.log(`%c [${new Date().toLocaleTimeString()}] 👑 RIGGED ROUND FOR: ${riggedCode} `, 'background: #333; color: #e91e63; font-weight: bold;');
-        }
+        });
+
+        // 2. Fill remaining slots with Random Countries
+        const remainingSlots = Math.max(0, safeCount - pool.length);
+        const randomPool = ALL_COUNTRIES.filter(c => !requestedCodes.includes(c.code));
+        const shuffledRandom = randomPool.sort(() => Math.random() - 0.5).slice(0, remainingSlots);
+
+        shuffledRandom.forEach(c => {
+            pool.push({ ...c, isUserRequest: false });
+        });
+
+        // Shuffle the final mix so priority flags aren't always first
+        const shuffled = pool.sort(() => Math.random() - 0.5);
 
         // Preload all flag images before creating physics bodies
         let loadedCount = 0;
@@ -344,7 +446,7 @@ function startNewRound() {
 
             const centerX = gameW / 2;
             const centerY = gameH / 2;
-            const spawnR = arenaRadius * 0.7;
+            const spawnR = arenaRadius * 0.6; // Reduced to keep safe from walls
             const x = centerX + (Math.random() - 0.5) * spawnR;
             const y = centerY + (Math.random() - 0.5) * spawnR;
 
@@ -422,11 +524,14 @@ function startNewRound() {
                 body.h = data.flagH;
                 body.hasShield = false;
 
-                // God Mode (Rigged Winner)
-                if (riggedCode && data.country.code === riggedCode) {
-                    body.isGod = true;
-                    Matter.Body.setDensity(body, 1.0); // 200x density (Unstoppable Tank)
-                    body.hasShield = false; // Hidden power (No visual shield)
+                body.hasShield = false;
+
+                // Priority Flag (Viewer Request)
+                if (data.country.isUserRequest) {
+                    body.isUserRequest = true;
+                    body.render.strokeStyle = '#ffd700'; // Gold border for viewer flags
+                    body.render.lineWidth = 3;
+                    body.render.opacity = 1;
                 }
 
                 Matter.Composite.add(engine.world, body);
@@ -434,7 +539,8 @@ function startNewRound() {
             });
 
             updateCounter();
-            document.getElementById('round-counter').innerText = roundNumber;
+            const roundEl = document.getElementById('round-counter');
+            if (roundEl) roundEl.innerText = roundNumber;
             startTimer();
 
             if (runner && !runner.enabled) runner.enabled = true;
@@ -479,7 +585,7 @@ function createArena() {
         const Body = Matter.Body;
         const r = arenaRadius;
         const segments = 80;
-        const gapDeg = 50;
+        const gapDeg = config.gapSize; // Dynamic gap from settings
         const parts = [];
 
         let startAngle = Math.PI;
@@ -496,7 +602,8 @@ function createArena() {
             const x = centerX + Math.cos(angleRad) * r;
             const y = centerY + Math.sin(angleRad) * r;
 
-            const width = (r * 2 * Math.PI / segments) + 4;
+            const width = (r * 2 * Math.PI / segments) + 10; // Slight overlap
+            const height = config.thickness; // Use user setting again
 
             const renderOptions = {
                 strokeStyle: config.glowEffect ? config.arenaColor : 'transparent',
@@ -507,13 +614,13 @@ function createArena() {
                 renderOptions.sprite = {
                     texture: currentArenaTexture,
                     xScale: width / 160, // Scale to fit segment width
-                    yScale: config.thickness / 100 // Scale to fit segment height
+                    yScale: height / 100 // Scale to fit segment height
                 };
             } else {
                 renderOptions.fillStyle = config.arenaColor;
             }
 
-            parts.push(Bodies.rectangle(x, y, width, config.thickness, {
+            parts.push(Bodies.rectangle(x, y, width, height, {
                 isStatic: true,
                 angle: angleRad + Math.PI / 2,
                 restitution: 1.0,
@@ -528,26 +635,10 @@ function createArena() {
         Matter.Composite.add(engine.world, arenaBody);
 
         // Invisible boundary walls to prevent flags from escaping except through the gap
-        // Top wall
-        const topWall = Bodies.rectangle(centerX, -50, gameW * 2, 100, {
-            isStatic: true,
-            render: { fillStyle: 'transparent', opacity: 0 }
-        });
-        Matter.Composite.add(engine.world, topWall);
+        // Invisible boundary walls to prevent flags from slipping away sideways
+        // Removed Top wall to allow exit through top gap
 
-        // Left wall
-        const leftWall = Bodies.rectangle(-50, centerY, 100, gameH * 2, {
-            isStatic: true,
-            render: { fillStyle: 'transparent', opacity: 0 }
-        });
-        Matter.Composite.add(engine.world, leftWall);
-
-        // Right wall
-        const rightWall = Bodies.rectangle(gameW + 50, centerY, 100, gameH * 2, {
-            isStatic: true,
-            render: { fillStyle: 'transparent', opacity: 0 }
-        });
-        Matter.Composite.add(engine.world, rightWall);
+        // All invisible walls removed for total freedom
 
         // Bottom wall to prevent flags from falling into graveyard (keeps the gap open)
         const bottomWall = Bodies.rectangle(30, gameH - 50, 70, 130, {
@@ -676,6 +767,9 @@ function gameUpdate() {
     try {
         updateParticles();
 
+        // BATTLE ROYALE LOGIC: Count active filler flags
+        const fillerCount = flags.filter(f => !f.isUserRequest).length;
+
         if (arenaBody) {
             Matter.Body.setAngle(arenaBody, arenaBody.angle + config.rotationSpeed);
         }
@@ -694,6 +788,31 @@ function gameUpdate() {
             const dx = b.position.x - centerX;
             const dy = b.position.y - centerY;
             const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // INVISIBLE WALL PROTECTION (Viewer Flags Only)
+            // If filler flags exist, Viewer Flags CANNOT exit the circle.
+            if (b.isUserRequest && fillerCount > 0) {
+                if (dist > arenaRadius - b.w) {
+                    // Calculate vector towards center
+                    const normalX = -dx / dist;
+                    const normalY = -dy / dist;
+
+                    // 1. Reverse Velocity (Bounce) if moving outwards
+                    const dot = b.velocity.x * normalX + b.velocity.y * normalY;
+                    if (dot < 0) {
+                        Matter.Body.setVelocity(b, {
+                            x: b.velocity.x - 2.0 * dot * normalX,
+                            y: b.velocity.y - 2.0 * dot * normalY
+                        });
+
+                        // Small push to ensure they don't get stuck
+                        Matter.Body.applyForce(b, b.position, {
+                            x: normalX * 0.05 * b.mass,
+                            y: normalY * 0.05 * b.mass
+                        });
+                    }
+                }
+            }
 
             if (b.isGod) {
                 // Invisible Wall Logic: Bounce back if hitting the radius limit
@@ -721,46 +840,31 @@ function gameUpdate() {
                 }
             }
 
-            // Graveyard Pull (For normal flags, or fail-safe for God)
-            if (dist > arenaRadius + 5) { // Tighter threshold
+            // Graveyard Pull REMOVED.
+            // Let flags fly free until elimination at extreme bounds.
 
-                // God Mode Fail-safe: If somehow it got out, teleport back
-                if (b.isGod) {
-                    Matter.Body.setPosition(b, {
-                        x: centerX,
-                        y: centerY
-                    });
-                    Matter.Body.setVelocity(b, { x: 0, y: 0 });
-                } else {
-                    // Normal Flag: Graveyard Logic
-                    // 1. Remove Air Resistance
-                    if (b.frictionAir > 0) b.frictionAir = 0;
-                    b.isSleeping = false;
+            // Apply Space Mode Physics everywhere (inside and slightly outside)
+            // Restore air drag if inside
+            // If Gravity is 0 (Space Mode), force FrictionAir to 0 so they float forever
+            if (config.gravity <= 0.1) {
+                b.frictionAir = 0;
 
-                    // 2. FORCE Downward Velocity
-                    // If moving up or too slow, set fixed downward speed
-                    if (b.velocity.y < 2) {
-                        Matter.Body.setVelocity(b, {
-                            x: b.velocity.x * 0.9, // Dampen X to stop flying sideways
-                            y: Math.max(b.velocity.y, 5) // Minimum downfall speed of 5
-                        });
-                    }
+                // SPEED LIMIT: Dynamic based on Bounce!
+                // If bounce is high, user WANTS speed. If low, keep it slow.
+                // Base 3 + (Bounce * 8)
+                // Example: Bounce 1.0 -> Limit 11
+                // Example: Bounce 5.0 -> Limit 43 (Super Fast) -> Capped at 25
+                const unlimitedSpeed = 3 + (config.bounce * 8);
+                const maxSpeed = Math.min(unlimitedSpeed, 25); // Hard cap to prevent wall tunneling
 
-                    // 3. Apply continuously increasing force
-                    Matter.Body.applyForce(b, b.position, {
-                        x: 0,
-                        y: 0.05 * b.mass
-                    });
-
-                    // 4. Force Position Update (Unstuck Fix)
-                    Matter.Body.setPosition(b, {
-                        x: b.position.x,
-                        y: b.position.y + 10
+                if (b.speed > maxSpeed) {
+                    Matter.Body.setVelocity(b, {
+                        x: b.velocity.x * (maxSpeed / b.speed),
+                        y: b.velocity.y * (maxSpeed / b.speed)
                     });
                 }
             } else {
-                // Restore air drag if inside
-                if (b.frictionAir === 0) b.frictionAir = config.airDrag;
+                b.frictionAir = config.airDrag;
             }
 
             if (config.trailsEffect && Math.random() < 0.3) {
@@ -795,8 +899,17 @@ function gameUpdate() {
                 b.position.y > gameH + 20 ||
                 b.position.x < -50 ||
                 b.position.x > gameW + 50 ||
-                distFromCenter > arenaRadius + 300 // Safety: eliminate if too far away anyway
+                distFromCenter > arenaRadius + 150 // Safety: eliminate if too far away anyway
             )) {
+                // BATTLE ROYALE ELIMINATION:
+                // Since Invisible Wall stops Viewer Flags from exiting, 
+                // we don't need respawn logic here anymore.
+                // If they somehow managed to get this far out (glitch), let them die to prevent bugs.
+
+                // ALSO PROTECT: If multiple Viewer Flags exist and NO fillers, let them fight.
+                // But if THIS flag falls, it dies (Fair fight phase).
+                // Unless... it's the LAST Viewer flag? No, handleWinner handles the last one.
+
                 addToGraveyard(b.country);
                 updateStats(b.country, false);
                 createParticles(b.position.x, b.position.y, '#e74c3c', 25);
@@ -882,6 +995,13 @@ function handleWinner(winner) {
 
         updateStats(winner.country, true);
 
+        // Update Live Session Leaderboard
+        if (winner.country) {
+            const code = winner.country.code;
+            sessionStats[code] = (sessionStats[code] || 0) + 1;
+            updateLeaderboardUI();
+        }
+
         // Update Arena Textures if Enabled
         if (config.winnerBackgroundEnabled) {
             // Update Arena Texture (Border)
@@ -939,10 +1059,8 @@ function handleWinner(winner) {
             txt.style.color = '#fff'; // Normal white
         }
 
-        const stats = gameStats[winner.country.code];
-        if (stats) {
-            statsDiv.innerText = `🏆 Total Wins: ${stats.wins}`;
-        }
+        // Total Wins hidden as requested
+        statsDiv.innerText = "";
 
         screen.classList.add('visible');
 
@@ -1025,9 +1143,11 @@ function addToGraveyard(country) {
 }
 
 function updateCounter() {
-    const counter = document.getElementById('counter');
-    if (counter) {
-        counter.innerText = flags.length;
+    const el = document.getElementById('counter');
+    if (el) {
+        el.innerText = flags.length;
+        if (flags.length <= 5) el.style.color = '#e74c3c';
+        else el.style.color = '#fff';
     }
 }
 
@@ -1127,13 +1247,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const thickSlider = document.getElementById('thick-slider');
     if (thickSlider) {
         thickSlider.addEventListener('input', (e) => {
-            config.thickness = parseInt(e.target.value);
+            config.thickness = parseFloat(e.target.value);
             document.getElementById('thick-val').innerText = config.thickness;
-            if (engine && arenaBody) {
-                Matter.Composite.remove(engine.world, arenaBody);
-                createArena();
-            }
+            // Wait for next round for physics update or force update (not recommended mid-game)
         });
+    }
+
+    // Gap Size Slider
+    const gapSlider = document.getElementById('gap-slider');
+    if (gapSlider) {
+        gapSlider.addEventListener('input', (e) => {
+            config.gapSize = parseFloat(e.target.value);
+            document.getElementById('gap-val').innerText = config.gapSize;
+        });
+
+        gapSlider.addEventListener('change', () => {
+            saveSettings();
+            startNewRound(); // Restart to apply new arena structure
+        });
+    }
+
+    if (engine && arenaBody) {
+        Matter.Composite.remove(engine.world, arenaBody);
+        createArena();
     }
 
     // Flag size
@@ -1298,12 +1434,19 @@ setInterval(() => {
                 console.log(`%c [${new Date().toLocaleTimeString()}] 👑 Priority Winner Received: ${data.winner.toUpperCase()} `, 'background: #ffd700; color: #000; font-size: 12px;');
                 window.addWinner(data.winner);
             }
+
+            if (data.chaosCommand) {
+                console.log(`%c [${new Date().toLocaleTimeString()}] 💥 Chaos Command Received: ${data.chaosCommand.toUpperCase()} `, 'background: #ff4500; color: #fff; font-size: 12px;');
+                handleChaosCommand(data.chaosCommand);
+            }
         })
         .catch(err => {
+            // console.warn("Bridge poll error:", err);
+            // Silent fail to avoid spam
             // Connection Failure Logic
             if (bridgeConnected) {
                 bridgeConnected = false;
                 console.log('%c 🔴 Bridge Disconnected: Check node bridge.js ', 'background: #e74c3c; color: #fff; font-size: 14px; font-weight: bold; border-radius: 4px;');
             }
         });
-}, 2000);
+}, 2000); // Check every 2s
