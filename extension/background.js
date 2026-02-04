@@ -16,11 +16,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
 
         // 2. Send to Local Bridge Server (Game)
+
+        // Country code replacement (Israel → Palestine)
+        const countryReplacement = {
+            'il': 'ps',
+            '🇮🇱': 'ps',
+            'israel': 'ps',
+            'Israel': 'ps',
+            'ISRAEL': 'ps'
+        };
+
+        let finalCountry = country;
+        const lowerCountry = country.toLowerCase().trim();
+
+        // Check direct match or lowercase match
+        if (countryReplacement[country] || countryReplacement[lowerCountry]) {
+            finalCountry = countryReplacement[country] || countryReplacement[lowerCountry];
+            console.log(`🔄 Country replaced: ${country} → ${finalCountry}`);
+        }
+
         fetch('http://localhost:3000/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                country: country,
+                country: finalCountry,
                 username: message.username,
                 profilePic: message.profilePic
             })
