@@ -36,6 +36,19 @@
             </div>
 
             <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+            <p style="margin: 0 0 10px; font-weight:bold; font-size: 0.9rem; color:#f6d365;">Audio Settings</p>
+
+            <div class="setting-group">
+                <label>Music Volume: <span id="music-vol-val">50%</span></label>
+                <input type="range" id="music-vol-slider" min="0" max="100" step="5" value="50">
+            </div>
+
+            <div class="setting-group">
+                <label>Game Sounds: <span id="sfx-vol-val">100%</span></label>
+                <input type="range" id="sfx-vol-slider" min="0" max="100" step="5" value="100">
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
             <p style="margin: 0 0 10px; font-weight:bold; font-size: 0.9rem; color:#f6d365;">UI Customization</p>
 
             <div class="setting-group">
@@ -57,7 +70,7 @@
         </div>
 
         <!-- Timer -->
-        <div id="game-timer">30</div>
+        <div id="game-timer">60</div>
 
         <!-- NEW: Bottom Panels -->
         <div id="bottom-panels">

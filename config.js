@@ -58,7 +58,7 @@ const ALL_COUNTRIES = [
     { code: 'ae', name: 'UAE' }, { code: 'qa', name: 'Qatar' }, { code: 'kw', name: 'Kuwait' },
     { code: 'om', name: 'Oman' }, { code: 'bh', name: 'Bahrain' }, { code: 'lb', name: 'Lebanon' },
     { code: 'jo', name: 'Jordan' }, { code: 'sy', name: 'Syria' }, { code: 'ye', name: 'Yemen' },
-    { code: 'ps', name: 'Palestine' }, { code: 'tr', name: 'Turkey' },
+    { code: 'ps', name: 'Palestine' }, { code: 'ps', name: 'israel' }, { code: 'tr', name: 'Turkey' },
     { code: 'az', name: 'Azerbaijan' }, { code: 'kz', name: 'Kazakhstan' }, { code: 'uz', name: 'Uzbekistan' },
 
     // Europe

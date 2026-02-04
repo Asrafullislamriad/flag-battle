@@ -85,12 +85,28 @@ const COUNTRY_ALIASES = {
     'usa': 'us', 'america': 'us', 'united states': 'us',
     'uae': 'ae', 'dubai': 'ae',
     'korea': 'kr', 'south korea': 'kr',
-    'russia': 'ru', 'vietnam': 'vn', 'turkey': 'tr'
+    'russia': 'ru', 'vietnam': 'vn', 'turkey': 'tr',
+    'china': 'cn', 'japan': 'jp', 'india': 'in', 'pakistan': 'pk',
+    'bangladesh': 'bd', 'germany': 'de', 'france': 'fr',
+    'italy': 'it', 'spain': 'es', 'brazil': 'br', 'argentina': 'ar',
+    'canada': 'ca', 'australia': 'au', 'mexico': 'mx', 'egypt': 'eg',
+    'saudi': 'sa', 'saudi arabia': 'sa', 'netherlands': 'nl',
+    'poland': 'pl', 'portugal': 'pt', 'sweden': 'se', 'norway': 'no'
 };
+
 function resolveCountryCode(code) {
-    if (!code) return 'un';
-    code = code.toLowerCase().trim();
-    return COUNTRY_ALIASES[code] || code;
+    if (!code) return 'bd';
+    const str = String(code).trim();
+
+    // Extract emoji flag (🇧🇩 → 'bd')
+    const emojiMatch = str.match(/[\u{1F1E6}-\u{1F1FF}]{2}/u);
+    if (emojiMatch) {
+        const codePoints = [...emojiMatch[0]].map(c => c.codePointAt(0) - 0x1F1E6 + 65);
+        return String.fromCharCode(...codePoints).toLowerCase();
+    }
+
+    const lower = str.toLowerCase();
+    return COUNTRY_ALIASES[lower] || (lower.length === 2 ? lower : lower.substring(0, 2));
 }
 
 // --- Audio & TTS ---
@@ -98,44 +114,73 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 let audioUnlocked = false;
 
-window.addEventListener('click', () => {
-    if (audioCtx.state === 'suspended') {
+// Background Music
+const bgMusic = new Audio('../default music.mp3');
+bgMusic.loop = true;
+bgMusic.volume = 0.5; // Default 50%
+
+// Volume settings
+let musicVolume = 0.5;
+let sfxVolume = 1.0;
+
+// Unlock audio on first user interaction
+function unlockAudio() {
+    if (audioUnlocked) return;
+    audioCtx.resume().then(() => {
+        audioUnlocked = true;
+        console.log('🔊 Audio Unlocked');
+        // Start background music after unlock
+        bgMusic.play().catch(e => console.warn('Music autoplay blocked:', e));
+    });
+}
+
+// Auto-unlock on any interaction
+document.addEventListener('click', unlockAudio, { once: false });
+document.addEventListener('keydown', unlockAudio, { once: false });
+document.addEventListener('touchstart', unlockAudio, { once: false });
+
+// Try to unlock immediately
+setTimeout(() => {
+    if (!audioUnlocked) {
         audioCtx.resume().then(() => {
             audioUnlocked = true;
+            console.log('🔊 Audio Auto-Unlocked');
+            bgMusic.play().catch(e => console.warn('Music autoplay blocked:', e));
+        }).catch(() => {
+            console.log('⚠️ Audio needs user interaction');
         });
-    } else {
-        audioUnlocked = true;
     }
-}, { once: true });
+}, 100);
+
+function playTone(freq, duration, volume = 0.15) {
+    if (!audioUnlocked) {
+        unlockAudio();
+        return;
+    }
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(volume * sfxVolume, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {
+        console.warn('Audio error:', e);
+    }
+}
 
 function playSpawnSound() {
-    if (!audioUnlocked || audioCtx.state === 'suspended') return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.1);
+    console.log('🔊 Playing spawn sound...');
+    playTone(440, 0.1);
+    setTimeout(() => playTone(550, 0.1), 100);
 }
 
 function playEliminationSound() {
-    if (!audioUnlocked || audioCtx.state === 'suspended') return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.3);
+    playTone(200, 0.2);
+    setTimeout(() => playTone(150, 0.3), 150);
 }
 
 function speakWinner(text) {
@@ -149,11 +194,12 @@ function speakWinner(text) {
 
 // --- Snake Class ---
 class Snake {
-    constructor(countryCode, username, profilePic) {
+    constructor(countryCode, username, profilePic, isBot = false) {
         this.id = Math.random().toString(36).substr(2, 9);
         this.country = resolveCountryCode(countryCode);
         this.username = username || countryCode;
         this.profilePic = profilePic;
+        this.isBot = isBot; // Track if this is a bot
         this.parts = [];
         this.constraints = [];
         this.isDead = false;
@@ -165,10 +211,18 @@ class Snake {
         this.headSize = sizes.head;
         this.bodySize = sizes.body;
 
-        // Spawn
+        // Spawn Position
         const margin = 150;
         const x = margin + Math.random() * (width - margin * 2);
         const y = margin + Math.random() * (height - margin * 2);
+
+        console.log(`%c 📍 SPAWN COORDS: [${Math.round(x)}, ${Math.round(y)}] for ${this.country}`, "color: #fab1a0");
+
+        if (isNaN(x) || isNaN(y)) {
+            console.error("❌ SPAWN FAILED: Invalid Coordinates");
+            return;
+        }
+
         this.direction = Vector.normalise({
             x: (Math.random() - 0.5),
             y: (Math.random() - 0.5)
@@ -179,10 +233,19 @@ class Snake {
 
     createSnake(startX, startY) {
         const collisionGroup = Body.nextGroup(true);
+
+        // Head: Use profile pic if available, otherwise flag
         this.headUrl = this.profilePic || `https://flagcdn.com/w80/${this.country}.png`;
+
+        // Body: Use flag if valid country, otherwise use profile pic
+        // No fallback to 'bd' - if flag fails, body will show profile pic
         this.flagUrl = `https://flagcdn.com/w80/${this.country}.png`;
+
+        // Trigger loads
         getCachedImage(this.headUrl);
         getCachedImage(this.flagUrl);
+
+        console.log(`%c 🔧 CREATING BODIES for ${this.country}...`, "color: #dfe6e9");
 
         // HEAD
         this.head = Bodies.circle(startX, startY, this.headSize, {
@@ -289,6 +352,14 @@ const render = Render.create({
         pixelRatio: window.devicePixelRatio
     }
 });
+
+// Set canvas z-index to appear above bottom panels
+render.canvas.style.position = 'absolute';
+render.canvas.style.top = '0';
+render.canvas.style.left = '0';
+render.canvas.style.zIndex = '10'; // Above panels (z-index: 0)
+render.canvas.style.pointerEvents = 'none'; // Allow clicks to pass through to UI elements
+
 Render.run(render);
 const runner = Runner.create();
 Runner.run(runner, engine);
@@ -304,7 +375,13 @@ const walls = [
 Composite.add(world, walls);
 
 // --- Render Loop (Optimized) ---
+let frameCount = 0;
 Events.on(render, 'afterRender', () => {
+    frameCount++;
+    if (frameCount % 600 === 0) { // Log every ~10 seconds
+        console.log(`%c 🎨 RENDER LOOP ACTIVE: ${snakes.length} snakes visible`, "color: #55efc4");
+    }
+
     const ctx = render.context;
     snakes.forEach(snake => {
         if (snake.isDead) return;
@@ -312,7 +389,15 @@ Events.on(render, 'afterRender', () => {
             const part = snake.parts[i];
             const isHead = (i === 0);
             const size = isHead ? snake.headSize : snake.bodySize;
-            const imgUrl = isHead ? snake.headUrl : snake.flagUrl;
+            let imgUrl = isHead ? snake.headUrl : snake.flagUrl;
+
+            // Fallback: If body flag fails and profile pic exists, use it
+            if (!isHead && snake.profilePic) {
+                const flagSprite = getCircularSprite(snake.flagUrl);
+                if (!flagSprite) {
+                    imgUrl = snake.profilePic; // Use profile pic for body if flag failed
+                }
+            }
 
             // Get Pre-rendered Sprite
             const sprite = getCircularSprite(imgUrl);
@@ -374,7 +459,9 @@ Events.on(engine, 'beforeUpdate', () => {
 });
 
 // --- Spawn Logic ---
-function spawnSnake(data) {
+function spawnSnake(data, isBot = false) {
+    console.log('📥 spawnSnake called with:', data, 'isBot:', isBot);
+
     let country = 'un';
     let user = 'Player';
     let pic = null;
@@ -383,49 +470,110 @@ function spawnSnake(data) {
     if (typeof data === 'string') {
         country = data;
     } else if (typeof data === 'object') {
-        country = data.country || data.code || 'un';
+        // Try to extract emoji from comment/message first (like Flag Battle)
+        const comment = data.comment || data.message || data.text || '';
+        const emojiMatch = String(comment).match(/[\u{1F1E6}-\u{1F1FF}]{2}/u);
+
+        if (emojiMatch) {
+            // Extract country code from emoji flag
+            const codePoints = [...emojiMatch[0]].map(c => c.codePointAt(0) - 0x1F1E6 + 65);
+            country = String.fromCharCode(...codePoints).toLowerCase();
+            console.log(`   🚩 Emoji from comment: ${emojiMatch[0]} → ${country}`);
+        } else {
+            // Fallback to country field
+            country = data.country || data.code || 'bd';
+        }
+
         user = data.username || data.nickname || data.user || 'Player';
         pic = data.profilePic || data.profilePictureUrl || data.avatar || null;
     }
 
-    // Validate Country Code
-    if (!country || country.length > 3) country = 'un'; // Simple check
+    // Validate & resolve country code
+    country = resolveCountryCode(country);
 
-    // Check for duplicates/spam if needed? For now, allow all.
+    // Only log and sound for real players
+    if (!isBot) {
+        lastRealPlayerSpawnTime = Date.now(); // Track real player spawn time
+        console.log(`%c 🚀 ATTEMPTING LIVE SPAWN: ${country} (%c${user}%c)`, "color: #00d2d3; font-weight:bold;", "color: #f39c12", "color: #00d2d3");
+        console.log(`   📊 Spawn Data:`, { country, user, pic });
+        playSpawnSound();
+    }
 
-    // Play sound on spawn
-    playSpawnSound();
-
-    const s = new Snake(country, user, pic);
+    const s = new Snake(country, user, pic, isBot);
     snakes.push(s);
+
+    // Save stats immediately for this spawn
+    const soldierKey = `${user}_${country}`;
+    if (!persistentStats.soldiers[soldierKey]) {
+        persistentStats.soldiers[soldierKey] = {
+            username: user,
+            country: country,
+            spawns: 0,
+            profilePic: pic
+        };
+    }
+    persistentStats.soldiers[soldierKey].spawns += 1;
+    savePersistentStats(persistentStats);
+
     return s;
 }
 
 // --- EXTERNAL CONNECTIONS (For Extension) ---
-// 1. Expose to Window (Direct Call)
+console.log("%c 🐍 SNAKE BATTLE ENGINE READY ", "background: #2ecc71; color: black; font-size: 12px; font-weight: bold;");
+
+// 1. Expose function aliases (Extensions might look for these)
 window.spawnSnake = spawnSnake;
 
-// 2. Listen for 'message' events (postMessage from Content Script)
+// 2. Helper to clear persistent stats (for testing)
+window.clearStats = function () {
+    localStorage.removeItem('snakeGameStats');
+    persistentStats = { soldiers: {}, countries: {} };
+    console.log('🗑️ Persistent stats cleared!');
+    location.reload();
+};
+console.log("%c 💡 TIP: Type clearStats() in console to reset leaderboard", "color: #95a5a6; font-style: italic;");
+window.addPlayer = spawnSnake; // Common alias
+window.spawn = spawnSnake;     // Common alias
+window.f_spawn = spawnSnake;
+
+// 2. Listen for 'message' events (Broad Catch)
 window.addEventListener('message', (event) => {
-    // Security check: Accept messages from same window or extension
-    // Adjust logic based on how extension sends data. 
-    // Usually it sends { action: 'spawn', country: 'us', ... }
+    // Filter out React/internal noise, but KEEP everything else for debug
+    if (event.data?.source === 'react-devtools') return;
+
+    // LOG EVERYTHING to see what the extension is sending!
+    console.log("📨 RAW MSG:", event.data);
 
     const d = event.data;
     if (!d) return;
 
-    // specific format check
-    if (d.action === 'spawn' || d.type === 'spawn') {
+    // CASE A: Batch Array 
+    if (Array.isArray(d)) {
+        console.log(`%c 📦 Batch Received: ${d.length} items`, "background: #3498db; color: white; padding: 2px 5px; border-radius: 3px;");
+        d.forEach(item => spawnSnake(item));
+        return;
+    }
+
+    // CASE B: Object with 'list' or 'users'
+    if (d.list && Array.isArray(d.list)) {
+        console.log(`%c 📦 Named Batch Received: ${d.list.length} items`, "background: #3498db; color: white");
+        d.list.forEach(item => spawnSnake(item));
+        return;
+    }
+
+    // CASE C: Single Item (Action/Type based)
+    if (d.action === 'spawn' || d.type === 'spawn' || d.event === 'gift' || d.event === 'comment') {
         spawnSnake(d);
     }
-    // Direct object check { country: 'us', username: '...' }
-    else if (d.country && d.username) {
+    // CASE D: Direct Object { country: '...' }
+    else if (d.country || d.code || d.uniqueId) {
         spawnSnake(d);
     }
 });
 
-// 3. Listen for Custom DOM Events
+// 3. Custom Event
 window.addEventListener('spawnSnakeEvent', (e) => {
+    console.log("%c ⚡ CUSTOM EVENT TRIGGERED", "color: #e74c3c", e.detail);
     if (e.detail) spawnSnake(e.detail);
 });
 
@@ -443,12 +591,103 @@ function logKill(msg) {
 
 // --- Bots ---
 const BOT_COUNTRIES = ['us', 'gb', 'ca', 'de', 'fr', 'it', 'es', 'br', 'ar', 'jp', 'kr', 'in', 'bd', 'pk', 'sa', 'ae', 'tr', 'ru', 'cn', 'au'];
+
 function spawnBot() {
     const randomCountry = BOT_COUNTRIES[Math.floor(Math.random() * BOT_COUNTRIES.length)];
     const randomId = Math.floor(Math.random() * 999);
-    spawnSnake({ country: randomCountry, username: `Bot ${randomId}` });
+    spawnSnake({ country: randomCountry, username: `Bot ${randomId}` }, true); // Pass isBot=true
 }
-const botInterval = setInterval(() => { if (snakes.length < 10) spawnBot(); }, 2000);
+
+// --- Persistent Stats System ---
+let lastRealPlayerSpawnTime = 0;
+
+// Load persistent stats from localStorage
+function loadPersistentStats() {
+    const saved = localStorage.getItem('snakeGameStats');
+    return saved ? JSON.parse(saved) : { soldiers: {}, countries: {} };
+}
+
+// Save persistent stats to localStorage
+function savePersistentStats(stats) {
+    localStorage.setItem('snakeGameStats', JSON.stringify(stats));
+}
+
+let persistentStats = loadPersistentStats();
+
+// Update persistent stats after round
+function updatePersistentStats() {
+    snakes.forEach(snake => {
+        // Track ALL snakes (dead or alive, bot or real)
+
+        // Update soldier stats (by username) - Track SPAWN COUNT
+        const soldierKey = `${snake.username}_${snake.country}`;
+        if (!persistentStats.soldiers[soldierKey]) {
+            persistentStats.soldiers[soldierKey] = {
+                username: snake.username,
+                country: snake.country,
+                spawns: 0,
+                profilePic: snake.profilePic
+            };
+        }
+        persistentStats.soldiers[soldierKey].spawns += 1; // Count each spawn
+
+        // Update country stats
+        if (!persistentStats.countries[snake.country]) {
+            persistentStats.countries[snake.country] = { wins: 0 };
+        }
+        persistentStats.countries[snake.country].wins += 1;
+    });
+
+    savePersistentStats(persistentStats);
+    console.log('💾 Persistent stats saved:', persistentStats);
+}
+
+// Timer countdown
+const timerInterval = setInterval(() => {
+    timeLeft--;
+    if (timerDisplay) timerDisplay.innerText = timeLeft;
+
+    if (timeLeft <= 0) {
+        // Round ended
+        updatePersistentStats();
+        updateLeaderboards();
+
+        // Reset for new round
+        timeLeft = 60;
+        snakes.forEach(s => {
+            if (!s.isDead) {
+                s.parts.forEach(p => Composite.remove(world, p));
+                s.constraints.forEach(c => Composite.remove(world, c));
+                s.isDead = true;
+            }
+        });
+        snakes = [];
+    }
+}, 1000);
+
+// Smart Bot Spawning with Last 5 Second Detection
+const botInterval = setInterval(() => {
+    const realPlayers = snakes.filter(s => !s.isBot && !s.isDead);
+    const totalSnakes = snakes.filter(s => !s.isDead).length;
+
+    // Check if we're in last 5 seconds AND real user spawned recently
+    const timeSinceLastRealSpawn = Date.now() - lastRealPlayerSpawnTime;
+    const inLastFiveSeconds = timeLeft <= 5;
+    const recentRealActivity = timeSinceLastRealSpawn < 5000; // 5 seconds
+
+    // Don't spawn bots if in last 5 seconds AND real user spawned recently
+    if (inLastFiveSeconds && recentRealActivity) {
+        console.log(`🚫 Bot spawn paused (Last 5s + Real user active)`);
+        return;
+    }
+
+    // Spawn bots only if:
+    // 1. Less than 3 real players AND
+    // 2. Total snakes < 10
+    if (realPlayers.length < 3 && totalSnakes < 10) {
+        spawnBot();
+    }
+}, 2000);
 
 // --- Resize ---
 window.addEventListener('resize', () => {
@@ -462,16 +701,14 @@ window.addEventListener('resize', () => {
     Body.setPosition(walls[3], { x: -50, y: height / 2 });
 });
 
-// --- Settings Logic ---
+// --- Settings Panel Logic ---
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettings = document.getElementById('close-settings');
-const sizeSlider = document.getElementById('size-slider');
-const sizeVal = document.getElementById('size-val');
 const speedSlider = document.getElementById('speed-slider');
 const speedVal = document.getElementById('speed-val');
-
-// UI Customization Elements
+const sizeSlider = document.getElementById('size-slider');
+const sizeVal = document.getElementById('size-val');
 const uiScaleSlider = document.getElementById('ui-scale-slider');
 const uiOpacitySlider = document.getElementById('ui-opacity-slider');
 const uiPosSlider = document.getElementById('ui-pos-slider');
@@ -480,6 +717,46 @@ const uiOpacityVal = document.getElementById('ui-opacity-val');
 const uiPosVal = document.getElementById('ui-pos-val');
 const bottomPanels = document.getElementById('bottom-panels');
 
+// Audio sliders
+const musicVolSlider = document.getElementById('music-vol-slider');
+const musicVolVal = document.getElementById('music-vol-val');
+const sfxVolSlider = document.getElementById('sfx-vol-slider');
+const sfxVolVal = document.getElementById('sfx-vol-val');
+
+// Load saved volumes
+const savedMusicVol = localStorage.getItem('musicVolume') || '50';
+const savedSfxVol = localStorage.getItem('sfxVolume') || '100';
+
+if (musicVolSlider) {
+    musicVolSlider.value = savedMusicVol;
+    musicVolume = parseInt(savedMusicVol) / 100;
+    bgMusic.volume = musicVolume;
+    if (musicVolVal) musicVolVal.innerText = `${savedMusicVol}%`;
+
+    musicVolSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        musicVolume = val / 100;
+        bgMusic.volume = musicVolume;
+        if (musicVolVal) musicVolVal.innerText = `${val}%`;
+        localStorage.setItem('musicVolume', val);
+    });
+}
+
+if (sfxVolSlider) {
+    sfxVolSlider.value = savedSfxVol;
+    sfxVolume = parseInt(savedSfxVol) / 100;
+    if (sfxVolVal) sfxVolVal.innerText = `${savedSfxVol}%`;
+
+    sfxVolSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        sfxVolume = val / 100;
+        if (sfxVolVal) sfxVolVal.innerText = `${val}%`;
+        localStorage.setItem('sfxVolume', val);
+    });
+}
+
+if (settingsBtn) settingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
+if (closeSettings) closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
 
 const savedSpeed = localStorage.getItem('snakeSpeed');
 if (savedSpeed) CONFIG.snakeSpeed = parseInt(savedSpeed);
@@ -536,9 +813,14 @@ function updateUICardStyle() {
     const o = uiOpacitySlider.value;
     const p = uiPosSlider.value;
 
-    // Maintain centering while applying scale and vertical offset
+    // Apply scale and position to container (NOT opacity)
     bottomPanels.style.transform = `translateX(-50%) scale(${s}) translateY(-${p}px)`;
-    bottomPanels.style.opacity = o;
+
+    // Apply opacity to individual panels (so snakes aren't affected)
+    const panels = bottomPanels.querySelectorAll('.panel');
+    panels.forEach(panel => {
+        panel.style.opacity = o;
+    });
 
     // Update labels
     if (uiScaleVal) uiScaleVal.innerText = `${s}x`;
@@ -569,7 +851,7 @@ if (closeSettings) closeSettings.addEventListener('click', () => settingsModal.s
 
 
 // --- MATCH TIMER & LIST LOGIC ---
-let timeLeft = 30;
+let timeLeft = 60; // Changed from 30 to 60 seconds
 const timerEl = document.getElementById('game-timer');
 const winnerModal = document.getElementById('winner-modal');
 const listSoldiers = document.getElementById('list-soldiers');
@@ -579,30 +861,17 @@ const gameLoop = setInterval(() => {
     timeLeft--;
     if (timerEl) timerEl.innerText = timeLeft;
 
-    // --- 1. Update Left Panel: TOP SOLDIERS (Live Kills) ---
+    // --- 1. Update Left Panel: TOP SOLDIERS (Total Spawn Count - Persistent) ---
     if (listSoldiers) {
-        const sortedLive = [...snakes].sort((a, b) => b.kills - a.kills);
-        const top7Live = sortedLive.slice(0, 7); // Get Top 7
-        let html1 = '';
+        // Get persistent stats and sort by spawn count
+        const soldierEntries = Object.values(persistentStats.soldiers);
 
-        // Always render 7 slots (fill 4-7 with placeholders if needed)
-        for (let i = 0; i < 7; i++) {
-            const s = top7Live[i];
-            const rank = i + 1;
-            const isGold = rank === 1 ? 'gold' : '';
-
-            if (s) {
-                html1 += `
-                <div class="list-item ${isGold}">
-                    <span class="rank-idx">${rank}</span>
-                    <div class="li-content">
-                        <img src="${s.headUrl}" class="li-flag">
-                        <span class="li-name">${s.username}</span>
-                    </div>
-                    <span class="li-score">${s.kills}</span>
-                </div>`;
-            } else {
-                // Empty Slot
+        // Check if we have any soldiers data
+        if (soldierEntries.length === 0) {
+            // Show empty state
+            let html1 = '';
+            for (let i = 0; i < 7; i++) {
+                const rank = i + 1;
                 html1 += `
                 <div class="list-item">
                     <span class="rank-idx">${rank}</span>
@@ -613,8 +882,43 @@ const gameLoop = setInterval(() => {
                     <span class="li-score" style="opacity:0.3;">-</span>
                 </div>`;
             }
+            listSoldiers.innerHTML = html1;
+        } else {
+            // Show actual data
+            const sortedSoldiers = soldierEntries.sort((a, b) => b.spawns - a.spawns);
+            const top7Soldiers = sortedSoldiers.slice(0, 7);
+            let html1 = '';
+
+            for (let i = 0; i < 7; i++) {
+                const soldier = top7Soldiers[i];
+                const rank = i + 1;
+                const isGold = rank === 1 ? 'gold' : '';
+
+                if (soldier) {
+                    const flagUrl = soldier.profilePic || `https://flagcdn.com/w80/${soldier.country}.png`;
+                    html1 += `
+                    <div class="list-item ${isGold}">
+                        <span class="rank-idx">${rank}</span>
+                        <div class="li-content">
+                            <img src="${flagUrl}" class="li-flag">
+                            <span class="li-name">${soldier.username}</span>
+                        </div>
+                        <span class="li-score">${soldier.spawns}</span>
+                    </div>`;
+                } else {
+                    html1 += `
+                    <div class="list-item">
+                        <span class="rank-idx">${rank}</span>
+                        <div class="li-content" style="opacity:0.3;">
+                            <div class="li-flag" style="background:#333; border:none;"></div>
+                            <span class="li-name">...</span>
+                        </div>
+                        <span class="li-score" style="opacity:0.3;">-</span>
+                    </div>`;
+                }
+            }
+            listSoldiers.innerHTML = html1;
         }
-        listSoldiers.innerHTML = html1;
     }
 
     // --- 2. Update Right Panel: COUNTRY RANKING (Total Wins) ---
@@ -657,6 +961,9 @@ const gameLoop = setInterval(() => {
     }
 
     if (timeLeft <= 0) {
+        // Save persistent stats before ending round
+        updatePersistentStats();
+
         clearInterval(gameLoop);
         clearInterval(botInterval);
         findAndDeclareChampion();
@@ -707,3 +1014,46 @@ function findAndDeclareChampion() {
         location.reload();
     }, 6000);
 }
+
+// ============================================
+// BRIDGE POLLING SYSTEM (Extension Connection)
+// ============================================
+let bridgeConnected = false;
+
+setInterval(() => {
+    fetch('http://localhost:3000/next')
+        .then(res => res.json())
+        .then(data => {
+            // Connection Success
+            if (!bridgeConnected) {
+                bridgeConnected = true;
+                console.log('%c [FLOW BRIDGE] Bridge script loaded', 'background: #2ecc71; color: #000; font-size: 14px; font-weight: bold;');
+            }
+
+            // Handle Batch Data
+            if (data.batch && Array.isArray(data.batch)) {
+                if (data.batch.length > 0) {
+                    console.log(`%c [${new Date().toLocaleTimeString()}] 📦 Batch Received: ${data.batch.length} items`, 'background: #3498db; color: #fff; font-size: 12px;');
+                    data.batch.forEach((item, index) => {
+                        const logName = (typeof item === 'object' && item.country) ? item.country : String(item);
+                        console.log(`   -> [${index + 1}/${data.batch.length}] Processing: ${String(logName).toUpperCase()}`);
+                        spawnSnake(item);
+                    });
+                }
+            }
+            // Handle Single Item (Legacy)
+            else if (data.winner || data.player) {
+                const player = data.winner || data.player;
+                const logName = (typeof player === 'object' && player.country) ? player.country : player;
+                console.log(`%c [${new Date().toLocaleTimeString()}] 🚀 ATTEMPTING LIVE SPAWN: ${String(logName).toUpperCase()}`, 'background: #00d2d3; color: #000; font-size: 12px;');
+                spawnSnake(player);
+            }
+        })
+        .catch(err => {
+            // Connection Failure (Silent)
+            if (bridgeConnected) {
+                bridgeConnected = false;
+                console.log('%c 🔴 Bridge Disconnected: Check node bridge.js', 'background: #e74c3c; color: #fff; font-size: 14px; font-weight: bold;');
+            }
+        });
+}, 500); // Poll every 0.5s
