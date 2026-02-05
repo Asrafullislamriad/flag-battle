@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Flag War</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="../../core/countries.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+    </style>
+</head>
+
+<body>
+    <div id="game-ui">
+        <!-- Settings Button -->
+        <div id="settings-btn" title="Settings">⚙️</div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal">
+            <h2>Game Settings</h2>
+
+            <div class="setting-group">
+                <label>Snake Size: <span id="size-val">Auto</span></label>
+                <input type="range" id="size-slider" min="0" max="4" step="1" value="0">
+                <small style="color: #666; font-size: 0.8em; display:block; margin-top:5px;">
+                    0=Pop. Based, 1-3=Fixed Size.<br>
+                    <span style="color: #ff9966;">(Applies to next spawned snake)</span>
+                </small>
+            </div>
+
+            <div class="setting-group">
+                <label>Snake Speed: <span id="speed-val">4</span></label>
+                <input type="range" id="speed-slider" min="1" max="10" step="1" value="4">
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+            <p style="margin: 0 0 10px; font-weight:bold; font-size: 0.9rem; color:#f6d365;">Audio Settings</p>
+
+            <div class="setting-group">
+                <label>Music Volume: <span id="music-vol-val">50%</span></label>
+                <input type="range" id="music-vol-slider" min="0" max="100" step="5" value="50">
+            </div>
+
+            <div class="setting-group">
+                <label>Game Sounds: <span id="sfx-vol-val">100%</span></label>
+                <input type="range" id="sfx-vol-slider" min="0" max="100" step="5" value="100">
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+            <p style="margin: 0 0 10px; font-weight:bold; font-size: 0.9rem; color:#f6d365;">UI Customization</p>
+
+            <div class="setting-group">
+                <label>Card Size: <span id="ui-scale-val">1.0x</span></label>
+                <input type="range" id="ui-scale-slider" min="0.5" max="1.5" step="0.1" value="1.0">
+            </div>
+
+            <div class="setting-group">
+                <label>Card Opacity: <span id="ui-opacity-val">100%</span></label>
+                <input type="range" id="ui-opacity-slider" min="0.1" max="1.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="setting-group">
+                <label>Vertical Position: <span id="ui-pos-val">0px</span></label>
+                <input type="range" id="ui-pos-slider" min="0" max="500" step="10" value="0">
+            </div>
+
+            <button id="close-settings">Close</button>
+        </div>
+
+        <!-- Timer -->
+        <div id="game-timer">60</div>
+
+        <!-- NEW: Bottom Panels -->
+        <div id="bottom-panels">
+            <!-- Left: Top Soldiers (Live Kills) -->
+            <div class="panel" id="panel-soldiers">
+                <div class="panel-header">🎖️ TOP SOLDIERS</div>
+                <div class="panel-list" id="list-soldiers">
+                    <!-- Items injected via JS -->
+                </div>
+            </div>
+
+            <!-- Right: Country Ranking (Total Wins) -->
+            <div class="panel" id="panel-countries">
+                <div class="panel-header">🌍 COUNTRY RANKING</div>
+                <div class="panel-list" id="list-countries">
+                    <!-- Items injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Events / Notifications -->
+        <div id="kill-feed"></div>
+
+        <!-- Winner Modal (Heroes of the Round Style) -->
+        <div id="winner-modal">
+            <h1 class="modal-title">HEROES OF THE ROUND</h1>
+            <p class="modal-subtitle">� LEADING COUNTRIES & THEIR MVPS</p>
+
+            <div id="winner-card">
+                <div class="medal-icon">🥇</div>
+                <img id="winner-flag" src="" alt="Flag">
+                <h2 id="winner-country-code">USA</h2>
+                <div class="winner-stats">
+                    <span id="winner-score">0 pts</span>
+                </div>
+
+                <div class="mvp-section">
+                    <span class="mvp-label">MVP HERO</span>
+                    <div class="mvp-avatar-container">
+                        <img id="winner-avatar" src="" alt="Avatar">
+                    </div>
+                    <p id="winner-name">@PlayerOne</p>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <p>Next Round Starting...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Logic -->
+    <script src="game.js"></script>
+</body>
+
+</html>

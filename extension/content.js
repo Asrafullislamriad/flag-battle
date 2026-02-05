@@ -62,6 +62,33 @@ function scanChats() {
     });
 }
 
-// Run scanner every 1 second
-setInterval(scanChats, 1000);
-console.log("👀 Polling for chats every 1s...");
+// Setup MutationObserver for instant detection
+function setupObserver() {
+    const chatContainer = document.querySelector('yt-live-chat-item-list-renderer #items');
+
+    if (!chatContainer) {
+        console.warn('⚠️ Chat container not found, will retry...');
+        setTimeout(setupObserver, 1000);
+        return;
+    }
+
+    console.log('👁️ MutationObserver active - instant chat detection enabled!');
+
+    const observer = new MutationObserver((mutations) => {
+        // Only scan when new nodes are added
+        const hasNewMessages = mutations.some(m => m.addedNodes.length > 0);
+        if (hasNewMessages) {
+            scanChats();
+        }
+    });
+
+    observer.observe(chatContainer, {
+        childList: true,
+        subtree: false
+    });
+}
+
+// Start observer after warmup
+setTimeout(() => {
+    setupObserver();
+}, 5000);
