@@ -49,19 +49,111 @@ function playTone(freq, duration, type = 'sine') {
     }
 }
 
-// Load default background music
+// Playlist Configuration
+// Storing enabled state in object
+const PLAYLIST = [
+    { src: '../assets/music/1.mp3', name: 'Track 1', enabled: true },
+    { src: '../assets/music/2.mp3', name: 'Track 2', enabled: true },
+    { src: '../assets/music/3.mp3', name: 'Track 3', enabled: true },
+    { src: '../assets/music/4.mp3', name: 'Track 4', enabled: true }
+];
+let currentTrackIndex = 0;
+
+// Render Playlist UI in Settings
+function renderPlaylistUI() {
+    const container = document.getElementById('playlist-container');
+    if (!container) return;
+
+    container.innerHTML = ''; // Clear existing
+
+    PLAYLIST.forEach((track, index) => {
+        const div = document.createElement('div');
+        div.className = 'playlist-item';
+        div.innerHTML = `
+            <span>${track.name}</span>
+            <label class="playlist-toggle">
+                <input type="checkbox" ${track.enabled ? 'checked' : ''} onchange="toggleTrack(${index}, this.checked)">
+                <span class="playlist-slider"></span>
+            </label>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Toggle Track State
+window.toggleTrack = function (index, isChecked) {
+    if (index >= 0 && index < PLAYLIST.length) {
+        PLAYLIST[index].enabled = isChecked;
+
+        // If current track is disabled, skip to next enabled
+        if (!isChecked && currentTrackIndex === index) {
+            playNextTrack();
+        }
+    }
+};
+
+// Load and play background music from playlist
 function loadDefaultMusic() {
+    renderPlaylistUI(); // Initialize UI
+
     const audioPlayer = document.getElementById('bg-music');
 
-    // Set default music
-    audioPlayer.src = DEFAULT_MUSIC_URL;
-    audioPlayer.loop = true;
+    // Set initial track
+    playTrack(currentTrackIndex);
+
+    // Listen for track end to play next
+    audioPlayer.addEventListener('ended', playNextTrack);
+}
+
+function playTrack(index) {
+    const audioPlayer = document.getElementById('bg-music');
+
+    // Safety check
+    if (index >= PLAYLIST.length) index = 0;
+
+    // Check if enabled
+    if (!PLAYLIST[index].enabled) {
+        // Find next enabled track
+        playNextTrack();
+        return;
+    }
+
+    currentTrackIndex = index;
+    audioPlayer.src = PLAYLIST[currentTrackIndex].src;
+    audioPlayer.loop = false;
     audioPlayer.volume = config.musicVolume;
 
-    // Try to play (will fail without user interaction, that's okay)
-    audioPlayer.play().catch(() => {
+    audioPlayer.play().then(() => {
+        console.log(`🎵 Now Playing: ${PLAYLIST[currentTrackIndex].name}`);
+    }).catch(() => {
         console.log('Background music will start after user interaction');
     });
+}
+
+function playNextTrack() {
+    let nextIndex = currentTrackIndex;
+    let attempts = 0;
+    let found = false;
+
+    // Look for next enabled track
+    do {
+        nextIndex++;
+        if (nextIndex >= PLAYLIST.length) nextIndex = 0;
+        attempts++;
+
+        if (PLAYLIST[nextIndex].enabled) {
+            found = true;
+            break;
+        }
+    } while (attempts < PLAYLIST.length);
+
+    if (found) {
+        playTrack(nextIndex);
+    } else {
+        console.log('⛔ All tracks disabled');
+        const audioPlayer = document.getElementById('bg-music');
+        audioPlayer.pause();
+    }
 }
 
 // Handle custom music upload

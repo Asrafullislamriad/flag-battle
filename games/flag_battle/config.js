@@ -48,7 +48,7 @@ const POWERUP_TYPES = {
 // Access via window.ALL_COUNTRIES
 
 // Default background music URL (local file)
-const DEFAULT_MUSIC_URL = 'default music.mp3';
+const DEFAULT_MUSIC_URL = '../assets/music/1.mp3';
 
 // Stats storage
 let gameStats = {};

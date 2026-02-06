@@ -103,7 +103,7 @@ flag battle/
 ### Local Testing
 1. Open `index.html` in a modern browser
 2. Click anywhere to start audio
-3. Game will automatically load default music
+3. Game will automatically load 1
 4. Enjoy crash-free gameplay!
 
 ### Live Streaming
@@ -216,7 +216,7 @@ Power-ups: Enabled
 - Maximum 60 flags for performance
 - Particle effects limited to 500
 - Speech synthesis may not work in all browsers
-- Default music requires internet connection
+- 1 requires internet connection
 
 ## 📞 Support
 যদি কোনো সমস্যা হয়:

@@ -118,7 +118,7 @@ const audioCtx = new AudioContext();
 let audioUnlocked = false;
 
 // Background Music
-const bgMusic = new Audio('../assets/music/default music.mp3');
+const bgMusic = new Audio('../assets/music/1.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.5; // Default 50%
 
