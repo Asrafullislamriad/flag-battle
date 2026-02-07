@@ -36,7 +36,7 @@ window.ALL_COUNTRIES = [
     { code: 'bg', name: 'Bulgaria' }, { code: 'gr', name: 'Greece' }, { code: 'hu', name: 'Hungary' },
     { code: 'cz', name: 'Czech Republic' }, { code: 'sk', name: 'Slovakia' }, { code: 'hr', name: 'Croatia' },
     { code: 'si', name: 'Slovenia' }, { code: 'rs', name: 'Serbia' }, { code: 'ba', name: 'Bosnia' },
-    { code: 'al', name: 'Albania' }, { code: 'me', name: 'Montenegro' }, { code: 'mk', name: 'North Macedonia' },
+    { code: 'al', name: 'Albania' }, { code: 'mne', name: 'Montenegro' }, { code: 'mk', name: 'North Macedonia' },
     { code: 'xk', name: 'Kosovo' }, { code: 'cy', name: 'Cyprus' }, { code: 'mt', name: 'Malta' },
     { code: 'lu', name: 'Luxembourg' }, { code: 'lt', name: 'Lithuania' }, { code: 'lv', name: 'Latvia' },
     { code: 'ee', name: 'Estonia' }, { code: 'md', name: 'Moldova' },

@@ -361,17 +361,27 @@ window.addWinner = function (inputData) {
         return true;
     }
 
-    // 0. FLAG EMOJI SEARCH 
+    // 0. FLAG EMOJI SEARCH (Fixed for Surrogate Pairs)
     const flagRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/g;
     const foundFlags = rawText.match(flagRegex);
 
     if (foundFlags) {
         for (const flag of foundFlags) {
-            const points = [...flag].map(c => c.codePointAt(0));
-            if (points.length === 2) {
-                const char1 = String.fromCharCode(points[0] - 127397);
-                const char2 = String.fromCharCode(points[1] - 127397);
+            // Convert flag emoji to country code
+            const codePoints = [];
+            for (let i = 0; i < flag.length; i++) {
+                const point = flag.codePointAt(i);
+                if (point > 0xFFFF) i++; // Skip low surrogate
+                codePoints.push(point);
+            }
+
+            if (codePoints.length === 2) {
+                const char1 = String.fromCharCode(codePoints[0] - 127397);
+                const char2 = String.fromCharCode(codePoints[1] - 127397);
                 const code = (char1 + char2).toLowerCase();
+
+                console.log(`🚩 Flag Detected: ${flag} -> Code: ${code}`); // Debug
+
                 if (ALL_COUNTRIES.find(c => c.code === code)) {
                     return doQueue(code, "Emoji");
                 }
@@ -391,14 +401,81 @@ window.addWinner = function (inputData) {
         }
     }
 
-    // 2. LANGUAGE FALLBACK
-    if (/[\u0980-\u09FF]/.test(rawText)) return doQueue('bd', "Lang:Bengali");
-    if (/[\u0400-\u04FF]/.test(rawText)) return doQueue('ru', "Lang:Cyrillic");
-    if (/[\u0900-\u097F]/.test(rawText)) return doQueue('in', "Lang:Hindi");
-    if (/[\u0600-\u06FF]/.test(rawText)) return doQueue('sa', "Lang:Arabic");
+    // 2. LANGUAGE FALLBACK - REMOVED PER USER REQUEST
+    // Instead, treat unknown text as a "Profile Request" if user info exists
+
+    // If no country matched, but we have user info, spawn their profile!
+    if (userInfo && userInfo.username) {
+        // Create a unique code based on username
+        const uniqueCode = 'user_' + userInfo.username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 10);
+
+        // Queue as a special Profile Request
+        return queueWinner({
+            country: uniqueCode, // This will be used as ID
+            isProfileRequest: true, // Marker
+            username: userInfo.username,
+            profilePic: userInfo.profilePic || "https://picsum.photos/200" // Fallback or empty
+        }, "Profile");
+    }
 
     return false;
 };
+
+// Helper to add valid code to queue OR spawn dynamically
+function queueWinner(requestData, method) {
+    let reqCode, reqUser, isProfile = false;
+
+    try {
+        if (typeof requestData === 'object' && requestData !== null) {
+            reqCode = requestData.country;
+            reqUser = { name: requestData.username, pic: requestData.profilePic };
+            isProfile = requestData.isProfileRequest === true;
+        } else {
+            reqCode = requestData;
+            reqUser = null;
+        }
+
+        if (!reqCode || typeof reqCode !== 'string') return false;
+
+        let country = ALL_COUNTRIES.find(c => c.code === reqCode);
+
+        // DYNAMIC PROFILE CREATION
+        if (!country && isProfile) {
+            country = {
+                code: reqCode,
+                name: reqUser.name,
+                isProfile: true,
+                flagSrc: reqUser.pic
+            };
+            console.log(`👤 New Challenger: ${country.name}`);
+        }
+
+        if (!country) return false;
+
+        // DYNAMIC SPAWN LOGIC (Simplified & Forced)
+        if (!isGameOver) {
+            console.log(`🚀 ATTEMPTING LIVE SPAWN: ${country.name}`); // Debug
+
+            spawnSingleFlag(country, reqUser);
+
+            // Save request for winner screen
+            if (window.currentRoundRequests) {
+                window.currentRoundRequests.push({ code: reqCode, user: reqUser, countryObj: country });
+            }
+            return true;
+        }
+
+        // If Game IS Over
+        // Store full country object for profile support
+        window.winnerQueue.push(isProfile ? { ...requestData, countryObj: country } : requestData);
+        console.log(`✅ Game Over/Inactive. Added to Queue: ${country.name}`);
+        return true;
+
+    } catch (e) {
+        console.error("QueueWinner Error:", e);
+        return false;
+    }
+}
 
 // Start new round
 function startNewRound() {
@@ -462,7 +539,17 @@ function startNewRound() {
 
         // 1. Add Requested Countries (Priority)
         uniqueRequests.forEach(req => {
-            const country = ALL_COUNTRIES.find(c => c.code === req.code);
+            // Check if it's a standard country code OR a dynamic profile object
+            let country = ALL_COUNTRIES.find(c => c.code === req.code);
+
+            // If not found, check if we saved a dynamic country object (from queueWinner)
+            if (!country && window.currentRoundRequests) {
+                const savedReq = window.currentRoundRequests.find(r => r.code === req.code);
+                if (savedReq && savedReq.countryObj) {
+                    country = savedReq.countryObj;
+                }
+            }
+
             if (country) {
                 // Attach user data to the country object temporarily for this round
                 pool.push({ ...country, isUserRequest: true, userData: req.user });
@@ -510,8 +597,17 @@ function startNewRound() {
 
 
             // Load image with retry
+            // Load image with retry
             const img = new Image();
-            // img.crossOrigin = 'anonymous'; // Removed to allow local file loading
+
+            // For Profile Pictures (External URLs), we need Anonymous access
+            if (c.isProfile) {
+                img.crossOrigin = 'anonymous';
+                img.src = c.flagSrc;
+            } else {
+                const filename = c.code === 'ad' ? 'andorra' : c.code;
+                img.src = `../assets/flags/${filename}.png`;
+            }
 
             let retryCount = 0;
             const maxRetries = 3;
@@ -519,7 +615,10 @@ function startNewRound() {
             const tryLoad = () => {
                 img.onload = () => {
                     loadedCount++;
-                    flagCache[c.code] = img; // Store in cache
+                    // Only cache standard country flags, not dynamic user profiles
+                    if (!c.isProfile) {
+                        flagCache[c.code] = img;
+                    }
                     flagData.push({ country: c, img, x, y, flagW, flagH });
 
                     // All images loaded - create physics bodies
@@ -534,9 +633,9 @@ function startNewRound() {
                         console.log(`Retrying flag ${c.code} (${retryCount}/${maxRetries})`);
                         setTimeout(tryLoad, 500 * retryCount);
                     } else {
-                        console.warn(`Failed to load flag: ${c.code} after ${maxRetries} attempts`);
+                        console.warn(`Failed to load flag: ${c.code}`);
                         loadedCount++;
-                        // Still create body even without image
+                        // Fallback for profile pics? Maybe use a default avatar
                         flagData.push({ country: c, img: null, x, y, flagW, flagH });
 
                         if (loadedCount === shuffled.length) {
@@ -544,9 +643,6 @@ function startNewRound() {
                         }
                     }
                 };
-
-                const filename = c.code === 'ad' ? 'andorra' : c.code;
-                img.src = `../assets/flags/${filename}.png`;
             };
 
             tryLoad();
@@ -1086,8 +1182,8 @@ function gameRender() {
                 ctx.lineWidth = 3;
                 ctx.textAlign = "center";
 
-                // Draw Profile Pic (if available)
-                if (b.userImg && b.userImg.complete && b.userImg.naturalWidth > 0) {
+                // Draw Profile Pic (if available) - BUT SKIP if the flag ITSELF is a profile pic
+                if (b.userImg && b.userImg.complete && b.userImg.naturalWidth > 0 && !b.country.isProfile) {
                     const size = 24;
                     const py = b.h / 2 + 15;
 
@@ -1199,8 +1295,15 @@ function handleWinner(winner) {
 
         img.style.display = 'block';
         countTxt.style.display = 'none';
-        const filename = winner.country.code === 'ad' ? 'andorra' : winner.country.code;
-        img.src = `../assets/flags/${filename}.png`;
+
+        if (winner.country.isProfile) {
+            img.src = winner.country.flagSrc;
+            img.crossOrigin = 'anonymous';
+        } else {
+            const filename = winner.country.code === 'ad' ? 'andorra' : winner.country.code;
+            img.src = `../assets/flags/${filename}.png`;
+            img.removeAttribute('crossOrigin');
+        }
 
         // Special text for shout-out rounds
         if (roundNumber % 3 === 0) {
@@ -1328,8 +1431,14 @@ function addToGraveyard(country) {
     try {
         const gy = document.getElementById('graveyard');
         const img = document.createElement('img');
-        const filename = country.code === 'ad' ? 'andorra' : country.code;
-        img.src = `../assets/flags/${filename}.png`;
+
+        if (country.isProfile) {
+            img.src = country.flagSrc;
+            img.crossOrigin = 'anonymous';
+        } else {
+            const filename = country.code === 'ad' ? 'andorra' : country.code;
+            img.src = `../assets/flags/${filename}.png`;
+        }
         img.className = 'dead-flag';
         img.title = country.name;
         img.onerror = () => {
@@ -1419,13 +1528,29 @@ function spawnSingleFlag(country, userData) {
         loadAndCreate(flagCache[country.code]);
     } else {
         const img = new Image();
-        // img.crossOrigin = 'anonymous'; // Removed for local
+
+        // Handle Profile Pictures vs Standard Flags
+        if (country.isProfile) {
+            img.crossOrigin = 'anonymous';
+            img.src = country.flagSrc;
+        } else {
+            const filename = country.code === 'ad' ? 'andorra' : country.code;
+            img.src = `../assets/flags/${filename}.png`;
+        }
+
         img.onload = () => {
-            flagCache[country.code] = img;
+            // Don't cache dynamic profile spawns to avoid bloat/issues
+            if (!country.isProfile) {
+                flagCache[country.code] = img;
+            }
             loadAndCreate(img);
         };
-        const filename = country.code === 'ad' ? 'andorra' : country.code;
-        img.src = `../assets/flags/${filename}.png`;
+
+        img.onerror = () => {
+            console.warn("Failed to load spawn flag:", country.code);
+            // Fallback: spawn without image (just colored body)
+            loadAndCreate(null);
+        };
     }
 }
 
@@ -1744,46 +1869,4 @@ if (isTestMode) {
     console.log('%c 🧪 TEST MODE ACTIVE: Bridge disconnected', 'background: #e67e22; color: #fff; font-size: 14px; padding: 4px; border-radius: 4px;');
 }
 
-setInterval(() => {
-    if (isTestMode) return; // Don't poll in test mode
-
-    fetch('http://localhost:3000/next')
-        .then(res => res.json())
-        .then(data => {
-            // Connection Success Logic
-            if (!bridgeConnected) {
-                bridgeConnected = true;
-                console.log('%c 🟢 Bridge Connected: LIVE CHAT ACTIVE ', 'background: #2ecc71; color: #000; font-size: 14px; font-weight: bold; border-radius: 4px;');
-            }
-
-            if (data.batch && Array.isArray(data.batch)) {
-                if (data.batch.length > 0) {
-                    console.log(`%c [${new Date().toLocaleTimeString()}] 📦 Batch Received: ${data.batch.length} items `, 'background: #3498db; color: #fff; font-size: 12px;');
-                    data.batch.forEach((winner, index) => {
-                        const logName = (typeof winner === 'object' && winner.country) ? winner.country : String(winner);
-                        console.log(`   -> [${index + 1}/${data.batch.length}] Processing: ${String(logName).toUpperCase()}`);
-                        window.addWinner(winner);
-                    });
-                }
-            } else if (data.winner) {
-                // Legacy Single Item Support
-                const logName = (typeof data.winner === 'object' && data.winner.country) ? data.winner.country : data.winner;
-                console.log(`%c [${new Date().toLocaleTimeString()}] 👑 Priority Winner Received: ${String(logName).toUpperCase()} `, 'background: #ffd700; color: #000; font-size: 12px;');
-                window.addWinner(data.winner);
-            }
-
-            if (data.chaosCommand) {
-                console.log(`%c [${new Date().toLocaleTimeString()}] 💥 Chaos Command Received: ${data.chaosCommand.toUpperCase()} `, 'background: #ff4500; color: #fff; font-size: 12px;');
-                handleChaosCommand(data.chaosCommand);
-            }
-        })
-        .catch(err => {
-            // console.warn("Bridge poll error:", err);
-            // Silent fail to avoid spam
-            // Connection Failure Logic
-            if (bridgeConnected) {
-                bridgeConnected = false;
-                console.log('%c 🔴 Bridge Disconnected: Check node bridge.js ', 'background: #e74c3c; color: #fff; font-size: 14px; font-weight: bold; border-radius: 4px;');
-            }
-        });
-}, 500); // Check every 0.5s (Faster Response)
+/* Legacy Bridge Loop Removed for Embedded Mobile Integration */

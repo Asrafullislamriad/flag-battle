@@ -173,8 +173,19 @@
         <div class="control-group">
             <label class="checkbox-label">
                 <input type="checkbox" id="rotation-toggle" checked>
-                <span>QP ফ্ল্যাগ রোটেশন (Rolling)</span>
+                <span>🔄 ফ্ল্যাগ রোটেশন (Rolling)</span>
             </label>
+        </div>
+
+        <div class="control-group"
+            style="margin-top: 20px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 15px;">
+            <label style="display: block; margin-bottom: 8px;">📺 YouTube Live Chat</label>
+            <input type="text" id="yt-video-id" placeholder="Video ID (e.g., 4Ryov1ob2Hw)"
+                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; margin-bottom: 8px;">
+            <button id="connect-yt-btn"
+                style="width: 100%; padding: 10px; border-radius: 4px; border: none; background: #e74c3c; color: white; font-weight: bold; cursor: pointer;">
+                🔗 Connect to Live Chat
+            </button>
         </div>
 
         <div class="control-group">
@@ -240,6 +251,73 @@
     <script src="utils.js"></script>
     <script src="game.js"></script>
 
+    <!-- Mobile Live Chat Integration (Hidden) -->
+    <div id="live-chat-container"
+        style="display: none; position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
+        <iframe id="yt-chat-frame" width="100%" height="100%" frameborder="0"></iframe>
+    </div>
+
+    <script>
+        // Feature: Mobile Live Chat Bridge
+        // This function loads the YouTube Live Chat in a hidden IFrame
+        window.startYouTubeConnection = (videoId) => {
+            if (!videoId) {
+                alert("Please provide a valid YouTube Video ID!");
+                return;
+            }
+            console.log("Connecting to YouTube Live Chat:", videoId);
+            const url = `https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}`;
+            const container = document.getElementById('live-chat-container');
+            const frame = document.getElementById('yt-chat-frame');
+
+            container.style.display = 'block';
+            frame.src = url;
+            alert("✅ Live Chat Connected! (Hidden Mode)");
+        };
+
+        // Button Click Handler
+        document.getElementById('connect-yt-btn').addEventListener('click', () => {
+            const videoId = document.getElementById('yt-video-id').value.trim();
+            if (videoId) {
+                window.startYouTubeConnection(videoId);
+            } else {
+                alert("⚠️ Please enter a YouTube Video ID!");
+            }
+        });
+
+        // Listen for messages from the Tampermonkey script running inside the IFrame
+        window.addEventListener("message", (event) => {
+            // Log raw events for debugging
+            // console.log("Raw Message:", event.data);
+
+            if (event.data && event.data.type === 'NEW_COMMENT') {
+                const { user, comment, pic } = event.data.payload;
+
+                // VISIBLE DEBUG LOG
+                console.log(`%c 📨 GAME RECEIVED: [${user}]: ${comment}`, 'color: #fff; background: #00aa00; font-size: 12px; padding: 2px;');
+
+                // Add to game
+                if (window.addWinner) {
+                    window.addWinner({
+                        country: comment,
+                        username: user,
+                        profilePic: pic
+                    });
+                } else {
+                    console.error("❌ window.addWinner function missing!");
+                }
+            }
+        });
+
+        // Debug Helper
+        window.debugSpawn = () => {
+            console.log("🧪 Sending Test Message...");
+            window.postMessage({
+                type: 'NEW_COMMENT',
+                payload: { user: "DebugUser", comment: "bd", pic: "" }
+            }, "*");
+        };
+    </script>
 </body>
 
 </html>
