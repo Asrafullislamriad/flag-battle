@@ -198,7 +198,37 @@ function applySettings() {
     setCheck('glow-toggle', config.glowEffect);
     setCheck('trails-toggle', config.trailsEffect);
 
+
     // Apply colors
     if (document.getElementById('arena-color')) document.getElementById('arena-color').value = config.arenaColor;
     if (document.getElementById('bg-color')) document.getElementById('bg-color').value = config.bgColor;
 }
+
+// Load audio settings from localStorage
+function loadAudioSettings() {
+    const savedSound = localStorage.getItem('audio_sound_enabled');
+    const savedMusic = localStorage.getItem('audio_music_volume');
+
+    if (savedSound !== null) {
+        config.soundEnabled = savedSound === 'true';
+        console.log('📌 Loaded sound setting:', config.soundEnabled);
+    }
+
+    if (savedMusic !== null) {
+        config.musicVolume = parseFloat(savedMusic);
+        console.log('📌 Loaded music volume:', config.musicVolume);
+    }
+}
+
+// Save audio settings to localStorage
+function saveAudioSettings() {
+    localStorage.setItem('audio_sound_enabled', config.soundEnabled);
+    localStorage.setItem('audio_music_volume', config.musicVolume);
+    console.log('💾 Audio settings saved');
+}
+
+// Load settings on page load
+window.addEventListener('DOMContentLoaded', () => {
+    loadAudioSettings();
+    applySettings();
+});

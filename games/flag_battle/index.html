@@ -258,7 +258,7 @@
     </div>
 
     <script>
-        // Feature: Mobile Live Chat Bridge
+        // Feature: Mobile Live Chat Bridge with Auto-Save
         // This function loads the YouTube Live Chat in a hidden IFrame
         window.startYouTubeConnection = (videoId) => {
             if (!videoId) {
@@ -272,8 +272,31 @@
 
             container.style.display = 'block';
             frame.src = url;
+
+            // Save Video ID to localStorage
+            localStorage.setItem('yt_video_id', videoId);
+            console.log("✅ Video ID saved:", videoId);
+
             alert("✅ Live Chat Connected! (Hidden Mode)");
         };
+
+        // Load saved Video ID on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedVideoId = localStorage.getItem('yt_video_id');
+            const inputField = document.getElementById('yt-video-id');
+
+            if (savedVideoId) {
+                // Fill input field with saved ID
+                inputField.value = savedVideoId;
+                console.log("📌 Loaded saved Video ID:", savedVideoId);
+
+                // Auto-connect after 2 seconds
+                setTimeout(() => {
+                    console.log("🔄 Auto-connecting to YouTube...");
+                    window.startYouTubeConnection(savedVideoId);
+                }, 2000);
+            }
+        });
 
         // Button Click Handler
         document.getElementById('connect-yt-btn').addEventListener('click', () => {
@@ -317,6 +340,43 @@
                 payload: { user: "DebugUser", comment: "bd", pic: "" }
             }, "*");
         };
+    </script>
+
+    <!-- Audio Settings Auto-Save -->
+    <script>
+        // Save audio settings when user changes them
+        window.addEventListener('load', () => {
+            // Wait for config.js to load
+            setTimeout(() => {
+                // Get all checkboxes and sliders
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                const sliders = document.querySelectorAll('input[type="range"]');
+
+                // Add change listeners to checkboxes
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        if (typeof saveAudioSettings === 'function') {
+                            setTimeout(saveAudioSettings, 100);
+                        }
+                    });
+                });
+
+                // Add input listeners to sliders (with debounce)
+                sliders.forEach(slider => {
+                    let timeout;
+                    slider.addEventListener('input', () => {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(() => {
+                            if (typeof saveAudioSettings === 'function') {
+                                saveAudioSettings();
+                            }
+                        }, 500);
+                    });
+                });
+
+                console.log('✅ Audio auto-save listeners attached');
+            }, 1000);
+        });
     </script>
 </body>
 

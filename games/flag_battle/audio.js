@@ -85,6 +85,10 @@ window.toggleTrack = function (index, isChecked) {
     if (index >= 0 && index < PLAYLIST.length) {
         PLAYLIST[index].enabled = isChecked;
 
+        // Save playlist state to localStorage
+        savePlaylistState();
+        console.log(`💾 Track ${index} (${PLAYLIST[index].name}) set to: ${isChecked}`);
+
         // If current track is disabled, skip to next enabled
         if (!isChecked && currentTrackIndex === index) {
             playNextTrack();
@@ -94,6 +98,9 @@ window.toggleTrack = function (index, isChecked) {
 
 // Load and play background music from playlist
 function loadDefaultMusic() {
+    // Load saved playlist state first
+    loadPlaylistState();
+
     renderPlaylistUI(); // Initialize UI
 
     const audioPlayer = document.getElementById('bg-music');
@@ -223,3 +230,35 @@ function initializeOnUserAction() {
 // Initialize audio and music on first user click
 document.addEventListener('click', initializeOnUserAction, { once: true });
 document.addEventListener('touchstart', initializeOnUserAction, { once: true });
+
+// Save playlist state to localStorage
+function savePlaylistState() {
+    const playlistState = PLAYLIST.map(track => ({
+        name: track.name,
+        enabled: track.enabled
+    }));
+    localStorage.setItem('playlist_state', JSON.stringify(playlistState));
+    console.log('💾 Playlist state saved:', playlistState);
+}
+
+// Load playlist state from localStorage
+function loadPlaylistState() {
+    const savedState = localStorage.getItem('playlist_state');
+
+    if (savedState) {
+        try {
+            const playlistState = JSON.parse(savedState);
+
+            // Apply saved state to PLAYLIST
+            playlistState.forEach((savedTrack, index) => {
+                if (index < PLAYLIST.length && savedTrack.name === PLAYLIST[index].name) {
+                    PLAYLIST[index].enabled = savedTrack.enabled;
+                }
+            });
+
+            console.log('📌 Playlist state loaded:', playlistState);
+        } catch (e) {
+            console.error('❌ Error loading playlist state:', e);
+        }
+    }
+}
