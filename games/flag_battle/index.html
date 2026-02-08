@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bn">
 
 <head>
@@ -40,6 +40,7 @@
 
     <div id="settings-btn" onclick="openSettings()">⚙️</div>
     <div id="stats-btn" onclick="openStats()">📊</div>
+    <div id="chat-toggle-btn" onclick="toggleChat()" title="Toggle Live Chat">📺</div>
 
     <div id="settings-modal">
         <button class="modal-close-btn" onclick="closeSettings()" title="বন্ধ করুন">✕</button>
@@ -177,6 +178,13 @@
             </label>
         </div>
 
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="flag-border-toggle" checked>
+                <span>🖼️ ফ্ল্যাগ বর্ডার</span>
+            </label>
+        </div>
+
         <div class="control-group"
             style="margin-top: 20px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 15px;">
             <label style="display: block; margin-bottom: 8px;">📺 YouTube Live Chat</label>
@@ -250,6 +258,7 @@
     <script src="audio.js"></script>
     <script src="utils.js"></script>
     <script src="game.js"></script>
+    <script src="shortcuts.js"></script>
 
     <!-- Mobile Live Chat Integration (Hidden) -->
     <div id="live-chat-container"
@@ -265,6 +274,27 @@
                 alert("Please provide a valid YouTube Video ID!");
                 return;
             }
+
+            // ✅ Check if running in Electron
+            const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+
+            if (isElectron) {
+                // In Electron, just save the video ID
+                // Electron's main.js will handle chat scraping
+                localStorage.setItem('yt_video_id', videoId);
+                console.log("✅ Video ID saved:", videoId);
+                console.log("🎯 Running in Electron - chat handled by main process");
+                alert("✅ Live Chat Connected! (Electron Mode)");
+
+                // Send IPC message to Electron main process
+                if (window.require) {
+                    const { ipcRenderer } = window.require('electron');
+                    ipcRenderer.send('connect-youtube', videoId);
+                }
+                return;
+            }
+
+            // Browser mode - use iframe scraping
             console.log("Connecting to YouTube Live Chat:", videoId);
             const url = `https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}`;
             const container = document.getElementById('live-chat-container');
@@ -277,8 +307,119 @@
             localStorage.setItem('yt_video_id', videoId);
             console.log("✅ Video ID saved:", videoId);
 
+            // Start chat scraping (works only with --disable-web-security)
+            setTimeout(() => {
+                startChatScraping(frame);
+            }, 3000);
+
             alert("✅ Live Chat Connected! (Hidden Mode)");
         };
+
+        // Chat scraping function (requires CORS disabled)
+        function startChatScraping(iframe) {
+            console.log("%c🔍 CHAT SCRAPING STARTED", "color: cyan; font-size: 14px; font-weight: bold;");
+            console.log("⏰ Checking every 500ms for new messages...");
+
+            let checkCount = 0;
+
+            setInterval(() => {
+                checkCount++;
+
+                try {
+                    // Step 1: Access iframe document
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                    if (!iframeDoc) {
+                        if (checkCount === 1) console.error("❌ Cannot access iframe document! CORS blocking detected.");
+                        return;
+                    }
+
+                    // Step 2: Find chat messages
+                    const messages = iframeDoc.querySelectorAll('yt-live-chat-text-message-renderer');
+
+                    // Log every 20 checks (10 seconds)
+                    if (checkCount % 20 === 0) {
+                        console.log(`🔄 Check #${checkCount}: Found ${messages.length} total messages in iframe`);
+                    }
+
+                    if (messages.length > 0) {
+                        const lastMsg = messages[messages.length - 1];
+
+                        // Step 3: Check if already processed
+                        if (!lastMsg.hasAttribute('data-scraped')) {
+                            console.log("%c📬 NEW MESSAGE DETECTED!", "color: lime; font-weight: bold;");
+
+                            lastMsg.setAttribute('data-scraped', 'true');
+
+                            // Step 4: Extract user
+                            const user = lastMsg.querySelector('#author-name')?.innerText;
+                            console.log("👤 User:", user || "NOT FOUND");
+                            // Step 5: Extract message
+                            const messageEl = lastMsg.querySelector('#message');
+                            console.log("💬 Message element:", messageEl ? "FOUND" : "NOT FOUND");
+
+                            let comment = "";
+                            if (messageEl) {
+                                messageEl.childNodes.forEach(node => {
+                                    if (node.nodeType === Node.TEXT_NODE) {
+                                        comment += node.textContent;
+                                    } else if (node.tagName === 'IMG') {
+                                        const emoji = node.alt || "";
+                                        console.log("🖼️ Image emoji detected:", emoji);
+                                        comment += emoji;
+                                    }
+                                });
+                            }
+                            console.log("💬 Extracted comment:", comment || "EMPTY");
+
+                            // Step 6: Extract profile pic
+                            const imgEl = lastMsg.querySelector('#img');
+                            const pic = imgEl ? imgEl.src : "";
+                            console.log("🖼️ Profile pic:", pic ? "FOUND" : "NONE");
+
+                            // Step 7: Validate data
+                            if (user && comment) {
+                                console.log(`%c✅ VALID MESSAGE: [${user}]: ${comment}`, "color: yellow; background: black; padding: 4px;");
+
+                                // Step 8: Check if addWinner exists
+                                if (typeof window.addWinner === 'function') {
+                                    console.log("🎮 Calling window.addWinner()...");
+
+                                    try {
+                                        window.addWinner({
+                                            country: comment,
+                                            username: user,
+                                            profilePic: pic
+                                        });
+                                        console.log("%c🚀 PLAYER SPAWNED!", "color: lime; font-size: 16px; font-weight: bold;");
+                                    } catch (spawnError) {
+                                        console.error("❌ Error calling addWinner:", spawnError);
+                                    }
+                                } else {
+                                    console.error("❌ window.addWinner function NOT FOUND!");
+                                    console.log("Available window functions:", Object.keys(window).filter(k => typeof window[k] === 'function').slice(0, 20));
+                                }
+                            } else {
+                                console.warn("⚠️ INVALID MESSAGE - Missing user or comment");
+                                console.log("User:", user, "Comment:", comment);
+                            }
+                        }
+                    } else if (checkCount === 10) {
+                        // After 5 seconds, if no messages found
+                        console.warn("⚠️ No messages found in iframe after 5 seconds");
+                        console.log("Iframe URL:", iframe.src);
+                        console.log("Iframe loaded:", iframe.contentDocument ? "YES" : "NO");
+                    }
+                } catch (error) {
+                    if (checkCount === 1) {
+                        // Only log error on first check
+                        console.error("❌ CHAT SCRAPING ERROR:", error.message);
+                        console.log("⚠️ Make sure browser is running with --disable-web-security flag!");
+                        console.log("Error details:", error);
+                    }
+                }
+            }, 500);
+        }
 
         // Load saved Video ID on page load
         window.addEventListener('DOMContentLoaded', () => {
@@ -377,6 +518,45 @@
                 console.log('✅ Audio auto-save listeners attached');
             }, 1000);
         });
+    </script>
+
+        <script>
+        // Chat Toggle Function - for Electron
+        function toggleChat() {
+            const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+            
+            if (isElectron && window.require) {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.send('toggle-chat-window');
+                console.log(' Toggle chat window requested');
+            } else {
+                const chatContainer = document.getElementById('live-chat-container');
+                const isVisible = chatContainer.style.display !== 'none' && chatContainer.style.width !== '1px';
+                if (isVisible) {
+                    chatContainer.style.display = 'none';
+                    chatContainer.style.width = '1px';
+                    chatContainer.style.height = '1px';
+                    chatContainer.style.opacity = '0';
+                    chatContainer.style.pointerEvents = 'none';
+                    console.log(' Chat hidden');
+                } else {
+                    chatContainer.style.display = 'block';
+                    chatContainer.style.position = 'fixed';
+                    chatContainer.style.top = '10px';
+                    chatContainer.style.right = '10px';
+                    chatContainer.style.width = '350px';
+                    chatContainer.style.height = '600px';
+                    chatContainer.style.opacity = '1';
+                    chatContainer.style.pointerEvents = 'auto';
+                    chatContainer.style.zIndex = '9999';
+                    chatContainer.style.border = '2px solid #2ecc71';
+                    chatContainer.style.borderRadius = '8px';
+                    chatContainer.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
+                    chatContainer.style.backgroundColor = '#1a1a1a';
+                    console.log(' Chat visible');
+                }
+            }
+        }
     </script>
 </body>
 

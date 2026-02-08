@@ -1,0 +1,44 @@
+﻿    <script>
+        // Chat Toggle Function - for Electron
+        function toggleChat() {
+            const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+            
+            if (isElectron && window.require) {
+                // Send IPC message to toggle chat window
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.send('toggle-chat-window');
+                console.log(' Toggle chat window requested');
+            } else {
+                // Browser mode - toggle iframe
+                const chatContainer = document.getElementById('live-chat-container');
+                const isVisible = chatContainer.style.display !== 'none' && chatContainer.style.width !== '1px';
+
+                if (isVisible) {
+                    chatContainer.style.display = 'none';
+                    chatContainer.style.width = '1px';
+                    chatContainer.style.height = '1px';
+                    chatContainer.style.opacity = '0';
+                    chatContainer.style.pointerEvents = 'none';
+                    console.log(' Chat hidden');
+                } else {
+                    chatContainer.style.display = 'block';
+                    chatContainer.style.position = 'fixed';
+                    chatContainer.style.top = '10px';
+                    chatContainer.style.right = '10px';
+                    chatContainer.style.width = '350px';
+                    chatContainer.style.height = '600px';
+                    chatContainer.style.opacity = '1';
+                    chatContainer.style.pointerEvents = 'auto';
+                    chatContainer.style.zIndex = '9999';
+                    chatContainer.style.border = '2px solid #2ecc71';
+                    chatContainer.style.borderRadius = '8px';
+                    chatContainer.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
+                    chatContainer.style.backgroundColor = '#1a1a1a';
+                    console.log(' Chat visible');
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

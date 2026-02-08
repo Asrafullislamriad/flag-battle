@@ -1,0 +1,29 @@
+{
+    "name": "flag-battle-desktop",
+    "version": "1.0.0",
+    "description": "Flag Battle Desktop App with YouTube Live Chat Integration",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder"
+    },
+    "author": "Flag Battle Team",
+    "license": "MIT",
+    "devDependencies": {
+        "electron": "^28.0.0",
+        "electron-builder": "^24.9.1"
+    },
+    "build": {
+        "appId": "com.flagbattle.desktop",
+        "productName": "Flag Battle",
+        "win": {
+            "target": "nsis",
+            "icon": "build/icon.ico"
+        },
+        "files": [
+            "**/*",
+            "!**/*.md",
+            "!build"
+        ]
+    }
+}

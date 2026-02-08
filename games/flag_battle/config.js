@@ -11,17 +11,17 @@ let config = {
     rotationSpeed: 0.018,
     flagCount: 40,
     circlePercent: 0.44,
-    powerupsEnabled: true,
-    particlesEnabled: true,
-    soundEnabled: true,
+    powerupsEnabled: false,        // ✅ Default OFF
+    particlesEnabled: false,       // ✅ Default OFF
+    soundEnabled: false,           // ✅ Default OFF
     arenaColor: '#2ecc71',
     bgColor: '#000000',
     airDrag: 0.02,
     randomForce: 0.1,
-    glowEffect: true,
-    trailsEffect: true,
+    glowEffect: false,             // ✅ Default OFF
+    trailsEffect: false,           // ✅ Default OFF
     gameVolume: 0.5,
-    winnerBackgroundEnabled: true,
+    winnerBackgroundEnabled: false, // ✅ Default OFF
     musicVolume: 0.3,
     gapSize: 50 // Degrees
 };

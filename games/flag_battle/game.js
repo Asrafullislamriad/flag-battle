@@ -1296,22 +1296,66 @@ function handleWinner(winner) {
         img.style.display = 'block';
         countTxt.style.display = 'none';
 
+        // Function to show winner screen after image is loaded
+        const showWinnerScreen = () => {
+            // Special text for shout-out rounds
+            if (roundNumber % 3 === 0) {
+                txt.innerText = "🎉 SHOUT OUT! 🎉\n" + winner.country.name + " WINS!";
+                txt.style.color = '#ffd700'; // Gold color for special rounds
+            } else {
+                txt.innerText = winner.country.name + " WINS!";
+                txt.style.color = '#fff'; // Normal white
+            }
+
+            // Continue with rest of winner screen setup...
+            // (Stats, supporters, etc. will be added below)
+        };
+
         if (winner.country.isProfile) {
-            img.src = winner.country.flagSrc;
-            img.crossOrigin = 'anonymous';
+            // Upgrade YouTube profile pic quality to s800 for high resolution
+            let highQualityPic = winner.country.flagSrc;
+            if (highQualityPic && highQualityPic.includes('yt3.ggpht.com')) {
+                // Replace s32, s48, s64, etc. with s800
+                highQualityPic = highQualityPic.replace(/=s\d+-/, '=s800-');
+                console.log('📸 Preloading s800 profile pic...');
+            }
+
+            // PRELOAD IMAGE BEFORE SHOWING
+            const preloadImg = new Image();
+            preloadImg.crossOrigin = 'anonymous';
+
+            preloadImg.onload = () => {
+                console.log('✅ High quality image loaded!');
+                img.src = highQualityPic;
+                img.crossOrigin = 'anonymous';
+                showWinnerScreen();
+            };
+
+            preloadImg.onerror = () => {
+                console.warn('⚠️ Failed to load s800, using original');
+                img.src = winner.country.flagSrc; // Fallback to original
+                img.crossOrigin = 'anonymous';
+                showWinnerScreen();
+            };
+
+            // Start preloading
+            preloadImg.src = highQualityPic;
+
+            // Timeout fallback (max 2 seconds wait)
+            setTimeout(() => {
+                if (!img.src) {
+                    console.warn('⏱️ Preload timeout, showing anyway');
+                    img.src = highQualityPic;
+                    img.crossOrigin = 'anonymous';
+                    showWinnerScreen();
+                }
+            }, 2000);
+
         } else {
             const filename = winner.country.code === 'ad' ? 'andorra' : winner.country.code;
             img.src = `../assets/flags/${filename}.png`;
             img.removeAttribute('crossOrigin');
-        }
-
-        // Special text for shout-out rounds
-        if (roundNumber % 3 === 0) {
-            txt.innerText = "🎉 SHOUT OUT! 🎉\n" + winner.country.name + " WINS!";
-            txt.style.color = '#ffd700'; // Gold color for special rounds
-        } else {
-            txt.innerText = winner.country.name + " WINS!";
-            txt.style.color = '#fff'; // Normal white
+            showWinnerScreen();
         }
 
         // Total Wins hidden as requested
@@ -1352,7 +1396,13 @@ function handleWinner(winner) {
                         const item = document.createElement('div');
                         item.className = 'supporter-item';
 
-                        const avatarUrl = sup.user.pic || '';
+                        let avatarUrl = sup.user.pic || '';
+
+                        // Upgrade YouTube profile pic to s800 for high quality
+                        if (avatarUrl && avatarUrl.includes('yt3.ggpht.com')) {
+                            avatarUrl = avatarUrl.replace(/=s\d+-/, '=s800-');
+                        }
+
                         const cleanName = String(sup.user.name).replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         const imgSource = avatarUrl ? avatarUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=random`;
 
