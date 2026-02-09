@@ -11,9 +11,10 @@
     <link rel="manifest"
         href="data:application/json;base64,ewogICJuYW1lIjogIkZsYWcgQmF0dGxlIFJveWFsZSAtIEFkdmFuY2VkIiwKICAic2hvcnRfbmFtZSI6ICJGbGFnIEJhdHRsZSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJmdWxsc2NyZWVuIiwKICAib3JpZW50YXRpb24iOiAicG9ydHJhaXQiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwNTA1MDUiLAogICJ0aGVtZV9jb2xvciI6ICIjMDUwNTA1IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhkcFpIUm9QU0l4T1RJaUlHaGxhV2RvZEQwaU1Ua3lJajQ4Y21WamRDQjNhV1IwYUQwaU1Ua3lJaUJvWldsbmFIUTlJakU1TWlJZ1ptbHNiRDBpSXpKbFkyTmpOeklpTHo0OGRHVjRkQ0I0UFNJNU5pSWdlVDBpT1RZaUlIUmxlSFF0WVc1amFHOXlQU0p0YVdSa2JHVWlJR1pwYkd3OUlpTm1abVlpSUdadmJuUXRabUZ0YVd4NVBTSnRiMjV2YzNCaFkyVWlJR1p2Ym5RdGMybDZaVDBpTkRBaVBpOS9MakF2TDJScGRqNDhMM1JsZUhRK1BDOXpkbWMrIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIgogICAgfQogIF0KfQ==">
     <link rel="apple-touch-icon"
-        href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzJlY2M3MSIvPjx0ZXh0IHg9Ijk2IiB5PSI5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSI0MCI+8J+PsPC8gzwvdGV4dD48L3N2Zz4=">
+        href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzJlY2M3MSIvPjx0ZXh0IHg9Ijk2IiB5PSI5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udy1zaXplPSI0MCI+8J+PsPC8gzwvdGV4dD48L3N2Zz4=">
     <title>Flag Battle Royale - Advanced Edition</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="playlist_styles.css">
 </head>
 
 <body>
@@ -41,6 +42,7 @@
     <div id="settings-btn" onclick="openSettings()">⚙️</div>
     <div id="stats-btn" onclick="openStats()">📊</div>
     <div id="chat-toggle-btn" onclick="toggleChat()" title="Toggle Live Chat">📺</div>
+    <div id="stream-btn" onclick="toggleStream()" title="Start/Stop Stream" style="display:flex;">📡</div>
 
     <div id="settings-modal">
         <button class="modal-close-btn" onclick="closeSettings()" title="বন্ধ করুন">✕</button>
@@ -217,6 +219,19 @@
             </label>
         </div>
 
+        <div class="control-group"
+            style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 15px; padding-top: 10px;">
+            <label>📡 স্ট্রিম বিটরেট: <span id="bitrate-val">4500</span> Kbps</label>
+            <input type="range" id="bitrate-slider" min="1000" max="8000" step="500" value="4500">
+            <p style="font-size: 10px; color: #888; margin-top: 5px;">(কম্পিউটার স্লো হলে বা বাফারিং হলে এটা কমান)</p>
+        </div>
+
+        <div class="control-group">
+            <label>🎬 স্ট্রিম FPS: <span id="fps-val">30</span> fps</label>
+            <input type="range" id="fps-slider" min="15" max="60" step="5" value="30">
+            <p style="font-size: 10px; color: #888; margin-top: 5px;">(বেশি FPS = স্মুথ ভিডিও কিন্তু বেশি লোড)</p>
+        </div>
+
         <button class="reset-settings-btn" onclick="resetSettings()">🔄 ডিফল্ট সেটিংস রিস্টোর করুন</button>
         <button class="close-btn" onclick="closeSettings()">✓ সেভ করুন</button>
     </div>
@@ -238,6 +253,101 @@
         </table>
         <button class="reset-stats-btn" onclick="resetStats()">🗑️ রিসেট করুন</button>
         <button class="close-btn" onclick="closeStats()">বন্ধ করুন</button>
+    </div>
+
+    <!-- Live Control Panel -->
+    <div id="live-control-panel"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; justify-content:center; align-items:center;">
+        <div
+            style="background:linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding:30px; border-radius:15px; width:500px; max-width:90%; border:2px solid #e74c3c; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+
+            <!-- Header -->
+            <div style="text-align:center; margin-bottom:20px;">
+                <h2 style="color:#fff; margin:0; font-size:24px;">📡 YouTube Live Streaming</h2>
+                <p style="color:#bdc3c7; font-size:12px; margin:5px 0 0 0;">Control your live stream settings</p>
+            </div>
+
+            <!-- Live Preview -->
+            <div
+                style="background:#000; border-radius:10px; overflow:hidden; margin-bottom:20px; border:2px solid #34495e; position:relative;">
+                <div
+                    style="position:absolute; top:5px; left:5px; background:rgba(231,76,60,0.9); color:white; padding:3px 8px; font-size:10px; font-weight:bold; border-radius:3px; z-index:1;">
+                    <span id="live-status-badge">⚪ OFFLINE</span>
+                </div>
+                <video id="live-panel-preview" autoplay muted
+                    style="width:100%; height:200px; object-fit:cover; display:block;"></video>
+            </div>
+
+            <!-- Stream Key Input -->
+            <div style="margin-bottom:15px;">
+                <label style="color:#ecf0f1; font-size:14px; display:block; margin-bottom:5px;">🔑 Stream Key:</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="password" id="live-panel-stream-key" placeholder="Paste your YouTube stream key here"
+                        style="flex:1; padding:10px; border-radius:5px; border:1px solid #34495e; background:#2c3e50; color:#fff; font-size:14px;">
+                    <button onclick="toggleStreamKeyVisibility()"
+                        style="background:#34495e; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; color:#fff;">👁️</button>
+                </div>
+                <p style="color:#95a5a6; font-size:11px; margin:5px 0 0 0;">Get your key from YouTube Studio → Go Live →
+                    Stream</p>
+            </div>
+
+            <!-- Bitrate Slider -->
+            <div style="margin-bottom:15px;">
+                <label style="color:#ecf0f1; font-size:14px; display:block; margin-bottom:5px;">📡 Bitrate: <span
+                        id="live-panel-bitrate-val" style="color:#2ecc71; font-weight:bold;">4500</span> Kbps</label>
+                <input type="range" id="live-panel-bitrate" min="1000" max="8000" step="500" value="4500"
+                    style="width:100%; height:6px; border-radius:5px; background:#34495e; outline:none; cursor:pointer;">
+                <div
+                    style="display:flex; justify-content:space-between; font-size:10px; color:#95a5a6; margin-top:2px;">
+                    <span>Low Quality</span>
+                    <span>High Quality</span>
+                </div>
+            </div>
+
+            <!-- FPS Slider -->
+            <div style="margin-bottom:20px;">
+                <label style="color:#ecf0f1; font-size:14px; display:block; margin-bottom:5px;">🎬 FPS: <span
+                        id="live-panel-fps-val" style="color:#3498db; font-weight:bold;">30</span> fps</label>
+                <input type="range" id="live-panel-fps" min="15" max="60" step="5" value="30"
+                    style="width:100%; height:6px; border-radius:5px; background:#34495e; outline:none; cursor:pointer;">
+                <div
+                    style="display:flex; justify-content:space-between; font-size:10px; color:#95a5a6; margin-top:2px;">
+                    <span>Smooth</span>
+                    <span>Ultra Smooth</span>
+                </div>
+            </div>
+
+            <!-- Aspect Ratio Selector -->
+            <div style="margin-bottom:20px;">
+                <label style="color:#ecf0f1; font-size:14px; display:block; margin-bottom:5px;">📐 Aspect Ratio:</label>
+                <select id="live-panel-aspect-ratio"
+                    style="width:100%; padding:10px; border-radius:5px; border:1px solid #34495e; background:#2c3e50; color:#fff; font-size:14px; cursor:pointer;">
+                    <option value="16:9">16:9 (Landscape - YouTube Default)</option>
+                    <option value="4:3">4:3 (Classic TV)</option>
+                    <option value="1:1">1:1 (Square - Instagram)</option>
+                    <option value="9:16">9:16 (Portrait - Mobile/Shorts)</option>
+                </select>
+                <p style="color:#95a5a6; font-size:11px; margin:5px 0 0 0;">Choose the video format for your stream</p>
+            </div>
+
+            <!-- Status Message -->
+            <div id="live-panel-status"
+                style="background:#34495e; padding:10px; border-radius:5px; margin-bottom:15px; text-align:center; color:#ecf0f1; font-size:13px;">
+                ⚪ Ready to stream
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; gap:10px;">
+                <button id="live-panel-start-btn" onclick="startLiveStream()"
+                    style="flex:1; background:#2ecc71; color:white; border:none; padding:12px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:14px;">
+                    🚀 Start Stream
+                </button>
+                <button onclick="closeLivePanel()"
+                    style="background:#e74c3c; color:white; border:none; padding:12px 20px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:14px;">
+                    ❌ Close
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="winner-screen">
@@ -264,6 +374,15 @@
     <div id="live-chat-container"
         style="display: none; position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
         <iframe id="yt-chat-frame" width="100%" height="100%" frameborder="0"></iframe>
+    </div>
+
+    <!-- Live Preview Window -->
+    <div id="live-preview-container"
+        style="display:none; position:fixed; bottom:20px; right:20px; width:250px; height:140px; border:2px solid #e74c3c; border-radius:8px; overflow:hidden; z-index:9000; background:#000;">
+        <div
+            style="position:absolute; top:0; left:0; background:rgba(231, 76, 60, 0.8); color:white; padding:2px 6px; font-size:10px; font-weight:bold;">
+            LIVE PREVIEW</div>
+        <video id="stream-preview" autoplay muted style="width:100%; height:100%; object-fit:cover;"></video>
     </div>
 
     <script>
@@ -520,11 +639,11 @@
         });
     </script>
 
-        <script>
+    <script>
         // Chat Toggle Function - for Electron
         function toggleChat() {
             const isElectron = navigator.userAgent.toLowerCase().includes('electron');
-            
+
             if (isElectron && window.require) {
                 const { ipcRenderer } = window.require('electron');
                 ipcRenderer.send('toggle-chat-window');
@@ -557,6 +676,443 @@
                 }
             }
         }
+    </script>
+    <script>
+        // Streaming Logic
+        let mediaRecorder;
+        let isStreaming = false;
+        let isDrawing = false;
+
+        async function toggleStream() {
+            const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+            if (!isElectron || !window.require) {
+                alert('Streaming only available in Electron app!');
+                return;
+            }
+
+            const panel = document.getElementById('live-control-panel');
+
+            if (isStreaming) {
+                // Stop streaming
+                stopLiveStream();
+            } else {
+                // Open control panel
+                panel.style.display = 'flex';
+
+                // Load saved settings
+                const savedKey = localStorage.getItem('youtube_stream_key');
+                const savedBitrate = localStorage.getItem('stream_bitrate') || '4500';
+                const savedFPS = localStorage.getItem('stream_fps') || '30';
+
+                document.getElementById('live-panel-stream-key').value = savedKey || '';
+                document.getElementById('live-panel-bitrate').value = savedBitrate;
+                document.getElementById('live-panel-bitrate-val').innerText = savedBitrate;
+                document.getElementById('live-panel-fps').value = savedFPS;
+                document.getElementById('live-panel-fps-val').innerText = savedFPS;
+
+                // Show preview immediately (before streaming)
+                try {
+                    const canvases = document.querySelectorAll('canvas');
+                    const canvas = canvases[1]; // Matter.js canvas
+                    if (canvas) {
+                        const previewStream = canvas.captureStream(30);
+                        const previewVideo = document.getElementById('live-panel-preview');
+                        previewVideo.srcObject = previewStream;
+                        document.getElementById('live-panel-status').innerHTML = '✅ Preview ready - Click Start to go live';
+                    }
+                } catch (e) {
+                    console.warn('Preview setup failed:', e);
+                    document.getElementById('live-panel-status').innerHTML = '⚠️ Start game first, then open this panel';
+                }
+            }
+        }
+
+        function closeLivePanel() {
+            document.getElementById('live-control-panel').style.display = 'none';
+        }
+
+        function toggleStreamKeyVisibility() {
+            const input = document.getElementById('live-panel-stream-key');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function closeStreamModal() {
+            document.getElementById('stream-key-modal').style.display = 'none';
+        }
+
+        function saveStreamKeyAndStart() {
+            const key = document.getElementById('stream-key-input').value.trim();
+            if (key) {
+                localStorage.setItem('youtube_stream_key', key);
+                closeStreamModal();
+                startStreamingProcess(key);
+            } else {
+                alert('Please enter a valid Stream Key');
+            }
+        }
+
+        async function startLiveStream() {
+            const streamKey = document.getElementById('live-panel-stream-key').value.trim();
+            const bitrate = document.getElementById('live-panel-bitrate').value;
+            const fps = parseInt(document.getElementById('live-panel-fps').value);
+
+            if (!streamKey) {
+                document.getElementById('live-panel-status').innerHTML = '❌ Please enter a stream key';
+                return;
+            }
+
+            // Save settings
+            localStorage.setItem('youtube_stream_key', streamKey);
+            localStorage.setItem('stream_bitrate', bitrate);
+            localStorage.setItem('stream_fps', fps);
+
+            const { ipcRenderer } = window.require('electron');
+            const streamBtn = document.getElementById('stream-btn');
+
+            try {
+                document.getElementById('live-panel-status').innerHTML = '⏳ Initializing stream...';
+
+                // 1. Capture Canvas - Get Matter.js canvas (not particle canvas)
+                console.log('🎨 Step 1: Capturing canvas...');
+                const canvases = document.querySelectorAll('canvas');
+                console.log('📊 Found', canvases.length, 'canvas elements');
+                const sourceCanvas = canvases[1]; // Matter.js canvas is the second one (index 1)
+                if (!sourceCanvas) {
+                    console.error('❌ Game canvas not found!');
+                    throw new Error('Game canvas not found');
+                }
+                console.log('✅ Source canvas found:', sourceCanvas.width + 'x' + sourceCanvas.height);
+
+                // 2. Get selected aspect ratio
+                console.log('📐 Step 2: Processing aspect ratio...');
+                const aspectRatio = document.getElementById('live-panel-aspect-ratio').value;
+                localStorage.setItem('stream_aspect_ratio', aspectRatio);
+                console.log('📐 Selected aspect ratio:', aspectRatio);
+
+                // 3. Create intermediate canvas for aspect ratio processing
+                const processedCanvas = document.createElement('canvas');
+                const ctx = processedCanvas.getContext('2d');
+
+                // Calculate dimensions based on aspect ratio
+                const sourceWidth = sourceCanvas.width;
+                const sourceHeight = sourceCanvas.height;
+                let targetWidth, targetHeight, cropX, cropY, cropWidth, cropHeight;
+
+                switch (aspectRatio) {
+                    case '16:9':
+                        targetWidth = 1920;
+                        targetHeight = 1080;
+                        const ratio16_9 = 16 / 9;
+                        if (sourceWidth / sourceHeight > ratio16_9) {
+                            cropHeight = sourceHeight;
+                            cropWidth = sourceHeight * ratio16_9;
+                            cropX = (sourceWidth - cropWidth) / 2;
+                            cropY = 0;
+                        } else {
+                            cropWidth = sourceWidth;
+                            cropHeight = sourceWidth / ratio16_9;
+                            cropX = 0;
+                            cropY = (sourceHeight - cropHeight) / 2;
+                        }
+                        break;
+                    case '4:3':
+                        targetWidth = 1440;
+                        targetHeight = 1080;
+                        const ratio4_3 = 4 / 3;
+                        if (sourceWidth / sourceHeight > ratio4_3) {
+                            cropHeight = sourceHeight;
+                            cropWidth = sourceHeight * ratio4_3;
+                            cropX = (sourceWidth - cropWidth) / 2;
+                            cropY = 0;
+                        } else {
+                            cropWidth = sourceWidth;
+                            cropHeight = sourceWidth / ratio4_3;
+                            cropX = 0;
+                            cropY = (sourceHeight - cropHeight) / 2;
+                        }
+                        break;
+                    case '1:1':
+                        targetWidth = 1080;
+                        targetHeight = 1080;
+                        const minDim = Math.min(sourceWidth, sourceHeight);
+                        cropWidth = minDim;
+                        cropHeight = minDim;
+                        cropX = (sourceWidth - minDim) / 2;
+                        cropY = (sourceHeight - minDim) / 2;
+                        break;
+                    case '9:16':
+                        targetWidth = 1080;
+                        targetHeight = 1920;
+                        const ratio9_16 = 9 / 16;
+                        if (sourceWidth / sourceHeight > ratio9_16) {
+                            cropHeight = sourceHeight;
+                            cropWidth = sourceHeight * ratio9_16;
+                            cropX = (sourceWidth - cropWidth) / 2;
+                            cropY = 0;
+                        } else {
+                            cropWidth = sourceWidth;
+                            cropHeight = sourceWidth / ratio9_16;
+                            cropX = 0;
+                            cropY = (sourceHeight - cropHeight) / 2;
+                        }
+                        break;
+                }
+
+                processedCanvas.width = targetWidth;
+                processedCanvas.height = targetHeight;
+
+                // 4. Continuously draw cropped/resized canvas
+                isDrawing = true;
+                const drawFrame = () => {
+                    if (!isDrawing) return;
+                    ctx.drawImage(sourceCanvas, cropX, cropY, cropWidth, cropHeight, 0, 0, targetWidth, targetHeight);
+                    requestAnimationFrame(drawFrame);
+                };
+                drawFrame();
+
+                const canvasStream = processedCanvas.captureStream(fps);
+
+                // 5. Capture Audio
+                let audioTracks = [];
+                if (window.getAudioContextAndMaster) {
+                    const { audioContext, masterGain } = window.getAudioContextAndMaster();
+                    if (audioContext && masterGain) {
+                        const dest = audioContext.createMediaStreamDestination();
+                        masterGain.connect(dest);
+                        audioTracks = dest.stream.getAudioTracks();
+                    }
+                }
+
+                // 3. Combine Streams
+                const combinedStream = new MediaStream([
+                    ...canvasStream.getVideoTracks(),
+                    ...audioTracks
+                ]);
+
+                // 4. Show preview in panel
+                const previewVideo = document.getElementById('live-panel-preview');
+                previewVideo.srcObject = combinedStream;
+
+                // 5. Setup MediaRecorder
+                let options = { mimeType: 'video/webm;codecs=h264' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'video/webm;codecs=vp8' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options = { mimeType: 'video/webm' };
+                    }
+                }
+
+                mediaRecorder = new MediaRecorder(combinedStream, options);
+
+                mediaRecorder.ondataavailable = async (e) => {
+                    if (e.data.size > 0) {
+                        const buffer = await e.data.arrayBuffer();
+                        ipcRenderer.send('stream-data', buffer);
+                    }
+                };
+
+                mediaRecorder.start(200);
+
+                // 6. Notify Backend
+                ipcRenderer.send('start-stream', {
+                    key: streamKey,
+                    bitrate: bitrate + 'k'
+                });
+
+                isStreaming = true;
+                streamBtn.innerText = '🔴';
+                streamBtn.style.background = '#e74c3c';
+
+                // Update UI
+                document.getElementById('live-status-badge').innerHTML = '🔴 LIVE';
+                document.getElementById('live-panel-status').innerHTML = '🔴 Streaming to YouTube';
+                document.getElementById('live-panel-start-btn').innerHTML = '🛑 Stop Stream';
+                document.getElementById('live-panel-start-btn').onclick = stopLiveStream;
+
+                console.log('🚀 Stream started:', bitrate + 'k', fps + 'fps');
+
+            } catch (e) {
+                console.error('Stream error:', e);
+                document.getElementById('live-panel-status').innerHTML = '❌ Error: ' + e.message;
+            }
+        }
+
+        function stopLiveStream() {
+            const { ipcRenderer } = window.require('electron');
+            const streamBtn = document.getElementById('stream-btn');
+
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+
+            ipcRenderer.send('stop-stream');
+            isStreaming = false;
+            isDrawing = false;
+
+            streamBtn.innerText = '📡';
+            streamBtn.style.background = '';
+
+            // Update UI
+            document.getElementById('live-status-badge').innerHTML = '⚪ OFFLINE';
+            document.getElementById('live-panel-status').innerHTML = '⚪ Stream stopped';
+            document.getElementById('live-panel-start-btn').innerHTML = '🚀 Start Stream';
+            document.getElementById('live-panel-start-btn').onclick = startLiveStream;
+
+            // Clear preview
+            const previewVideo = document.getElementById('live-panel-preview');
+            previewVideo.srcObject = null;
+
+            console.log('🛑 Stream stopped');
+        }
+
+        async function startStreamingProcess(streamKey) {
+            const { ipcRenderer } = window.require('electron');
+            const streamBtn = document.getElementById('stream-btn');
+
+            // Get Bitrate from Slider or Default
+            const bitrateSlider = document.getElementById('bitrate-slider');
+            const bitrateVal = bitrateSlider ? bitrateSlider.value : '4500';
+            const bitrate = bitrateVal + 'k';
+
+            // Get FPS from Slider or Default
+            const fpsSlider = document.getElementById('fps-slider');
+            const fps = fpsSlider ? parseInt(fpsSlider.value) : 30;
+
+            console.log('🚀 Starting stream with bitrate:', bitrate, 'FPS:', fps);
+
+            try {
+                // 1. Capture Canvas (Video)
+                const canvas = document.querySelector('canvas');
+                if (!canvas) throw new Error('Game canvas not found');
+                const canvasStream = canvas.captureStream(fps); // Use selected FPS
+
+                // 2. Capture Audio
+                let audioTracks = [];
+                if (window.getAudioContextAndMaster) {
+                    const { audioContext, masterGain } = window.getAudioContextAndMaster();
+                    if (audioContext && masterGain) {
+                        const dest = audioContext.createMediaStreamDestination();
+                        masterGain.connect(dest);
+                        audioTracks = dest.stream.getAudioTracks();
+                    }
+                }
+
+                // 3. Combine Streams
+                const combinedStream = new MediaStream([
+                    ...canvasStream.getVideoTracks(),
+                    ...audioTracks
+                ]);
+
+                // 4. Setup MediaRecorder
+                let options = { mimeType: 'video/webm;codecs=h264' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'video/webm;codecs=vp8' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options = { mimeType: 'video/webm' };
+                    }
+                }
+
+                mediaRecorder = new MediaRecorder(combinedStream, options);
+
+                mediaRecorder.ondataavailable = async (e) => {
+                    if (e.data.size > 0) {
+                        const buffer = await e.data.arrayBuffer();
+                        ipcRenderer.send('stream-data', buffer);
+                    }
+                };
+
+                mediaRecorder.start(200);
+
+                // 5. Notify Backend
+                ipcRenderer.send('start-stream', {
+                    key: streamKey,
+                    bitrate: bitrate
+                });
+
+                isStreaming = true;
+                streamBtn.innerText = '🔴';
+                streamBtn.style.background = '#e74c3c';
+
+                // Show Live Preview
+                const previewContainer = document.getElementById('live-preview-container');
+                const previewVideo = document.getElementById('stream-preview');
+                if (previewContainer && previewVideo) {
+                    previewVideo.srcObject = combinedStream;
+                    previewContainer.style.display = 'block';
+                }
+
+                console.log('🚀 Streaming started');
+
+                // IPC Status Listener
+                ipcRenderer.on('stream-status', (event, status) => {
+                    console.log('Stream Status:', status);
+                    if (status.status === 'error') {
+                        alert('Stream Error: ' + status.message);
+                        toggleStream(); // Stop on error
+                    }
+                });
+
+            } catch (e) {
+                console.error('Streaming setup failed:', e);
+                alert('Streaming setup failed: ' + e.message);
+            }
+        }
+    </script>
+
+    <script>
+        // Bitrate & FPS Slider Logic
+        window.addEventListener('DOMContentLoaded', () => {
+            const bitrateSlider = document.getElementById('bitrate-slider');
+            const bitrateVal = document.getElementById('bitrate-val');
+            const fpsSlider = document.getElementById('fps-slider');
+            const fpsVal = document.getElementById('fps-val');
+
+            // Load saved bitrate
+            const savedBitrate = localStorage.getItem('stream_bitrate');
+            if (savedBitrate) {
+                bitrateSlider.value = savedBitrate;
+                bitrateVal.innerText = savedBitrate;
+            }
+
+            // Load saved FPS
+            const savedFPS = localStorage.getItem('stream_fps');
+            if (savedFPS) {
+                fpsSlider.value = savedFPS;
+                fpsVal.innerText = savedFPS;
+            }
+
+            // Update on change - Bitrate
+            bitrateSlider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                bitrateVal.innerText = val;
+                localStorage.setItem('stream_bitrate', val);
+            });
+
+            // Update on change - FPS
+            fpsSlider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                fpsVal.innerText = val;
+                localStorage.setItem('stream_fps', val);
+            });
+
+            // Live Panel Sliders
+            const liveBitrateSlider = document.getElementById('live-panel-bitrate');
+            const liveBitrateVal = document.getElementById('live-panel-bitrate-val');
+            const liveFpsSlider = document.getElementById('live-panel-fps');
+            const liveFpsVal = document.getElementById('live-panel-fps-val');
+
+            if (liveBitrateSlider) {
+                liveBitrateSlider.addEventListener('input', (e) => {
+                    liveBitrateVal.innerText = e.target.value;
+                });
+            }
+
+            if (liveFpsSlider) {
+                liveFpsSlider.addEventListener('input', (e) => {
+                    liveFpsVal.innerText = e.target.value;
+                });
+            }
+        });
     </script>
 </body>
 

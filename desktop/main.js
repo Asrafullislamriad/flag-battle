@@ -200,6 +200,38 @@ ipcMain.on('toggle-chat-window', () => {
 });
 
 
+const streamer = require('./streaming/streamer');
+
+// Streaming IPC Handlers
+// Streaming IPC Handlers
+ipcMain.on('start-stream', (event, arg) => {
+  console.log('🎥 Requesting start stream...');
+
+  let key = arg;
+  let options = {};
+
+  // Handle object payload
+  if (typeof arg === 'object') {
+    key = arg.key;
+    options = { bitrate: arg.bitrate };
+  }
+
+  streamer.startStream(key, options,
+    (msg) => event.reply('stream-status', { status: 'active', message: msg }),
+    (err) => event.reply('stream-status', { status: 'error', message: err })
+  );
+});
+
+ipcMain.on('stream-data', (event, buffer) => {
+  streamer.writeToStream(Buffer.from(buffer));
+});
+
+ipcMain.on('stop-stream', (event) => {
+  console.log('🛑 Requesting stop stream...');
+  streamer.stopStream();
+  event.reply('stream-status', { status: 'stopped', message: 'Stream stopped' });
+});
+
 // App lifecycle
 app.whenReady().then(() => {
   createMainWindow();

@@ -4,13 +4,31 @@
 
 let audioContext = null;
 let audioContextInitialized = false;
+let masterGain = null; // Master node for streaming capture
+let bgMusicSource = null; // Source node for background music
 
 // Initialize audio context on user interaction
 function initAudioContext() {
     if (!audioContextInitialized) {
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Create Master Gain Node
+            masterGain = audioContext.createGain();
+            masterGain.connect(audioContext.destination);
+
             audioContextInitialized = true;
+
+            // Connect Background Music to Master Gain (for streaming)
+            const audioPlayer = document.getElementById('bg-music');
+            if (audioPlayer && !bgMusicSource) {
+                try {
+                    bgMusicSource = audioContext.createMediaElementSource(audioPlayer);
+                    bgMusicSource.connect(masterGain);
+                } catch (e) {
+                    console.warn('MediaElementSource error:', e);
+                }
+            }
 
             // Resume context if suspended
             if (audioContext.state === 'suspended') {
@@ -22,6 +40,14 @@ function initAudioContext() {
         }
     }
 }
+
+// Helper to get audio context for streaming
+window.getAudioContextAndMaster = function () {
+    if (!audioContext || !masterGain) {
+        initAudioContext();
+    }
+    return { audioContext, masterGain };
+};
 
 // Safe tone player with error handling
 function playTone(freq, duration, type = 'sine') {
@@ -37,7 +63,8 @@ function playTone(freq, duration, type = 'sine') {
         const osc = audioContext.createOscillator();
         const gain = audioContext.createGain();
         osc.connect(gain);
-        gain.connect(audioContext.destination);
+        // Connect to Master Gain instead of destination
+        gain.connect(masterGain || audioContext.destination);
         osc.frequency.value = freq;
         osc.type = type;
         gain.gain.setValueAtTime(0.1 * config.gameVolume, audioContext.currentTime);
@@ -104,6 +131,12 @@ function loadDefaultMusic() {
     renderPlaylistUI(); // Initialize UI
 
     const audioPlayer = document.getElementById('bg-music');
+
+    // Ensure Audio Context is initialized for the media element connection
+    if (!audioContextInitialized) {
+        // We can't force start audio context without user gesture usually
+        // But we try to prepare the connection
+    }
 
     // Set initial track
     playTrack(currentTrackIndex);

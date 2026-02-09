@@ -225,6 +225,46 @@ body {
     transform: scale(0.95);
 }
 
+#chat-toggle-btn,
+#stream-btn {
+    position: absolute;
+    bottom: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 16px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+}
+
+#chat-toggle-btn {
+    right: 50px;
+}
+
+#stream-btn {
+    right: 90px;
+}
+
+#chat-toggle-btn:hover,
+#stream-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: scale(1.1);
+}
+
+#chat-toggle-btn:active,
+#stream-btn:active {
+    transform: scale(0.95);
+}
+
 #settings-modal,
 #stats-modal {
     display: none;
@@ -805,7 +845,9 @@ body {
     color: #2ecc71;
     font-weight: bold;
     margin-left: 10px;
-}/* Playlist UI Styles */
+}
+
+/* Playlist UI Styles */
 .playlist-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -880,6 +922,7 @@ body {
 .playlist-toggle input:checked+.playlist-slider:before {
     transform: translateX(16px);
 }
+
 /* Chat Toggle Button */
 #chat-toggle-btn {
     position: absolute;
