@@ -1,0 +1,424 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #000000;
+    overflow: hidden;
+    font-family: 'Outfit', sans-serif;
+    color: white;
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#game-ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* --- Settings Button --- */
+#settings-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 35px;
+    height: 35px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 100;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+#settings-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg) scale(1.1);
+}
+
+#settings-modal {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    background: rgba(16, 18, 27, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 25px;
+    z-index: 200;
+    pointer-events: auto;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    color: white;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#settings-modal h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.setting-group {
+    margin-bottom: 20px;
+}
+
+.setting-group label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+input[type=range] {
+    width: 100%;
+    accent-color: #ff9966;
+    cursor: pointer;
+}
+
+#close-settings {
+    width: 100%;
+    padding: 10px;
+    background: #ff4757;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* --- Timer --- */
+#game-timer {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 3rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px #ff9966;
+    z-index: 50;
+    pointer-events: none;
+}
+
+/* --- Bottom Panels --- */
+#bottom-panels {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Base centering, dynamic Y updated via JS */
+    display: flex;
+    gap: 20px;
+    width: 90%;
+    max-width: 900px;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: auto;
+    transition: transform 0.1s, opacity 0.1s;
+    /* Quick response for sliders */
+    transform-origin: bottom center;
+    z-index: 0;
+    /* Below canvas so snakes appear on top */
+}
+
+.panel {
+    background: rgba(10, 14, 23, 0.9);
+    border: 2px solid #2a3b55;
+    border-radius: 16px;
+    width: 340px;
+    height: 420px;
+    /* FIXED HEIGHT for stability */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+.panel-header {
+    background: #121620;
+    color: #4facfe;
+    font-weight: 900;
+    padding: 15px;
+    text-align: center;
+    border-bottom: 2px solid #2a3b55;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+#panel-countries .panel-header {
+    color: #f6d365;
+    border-bottom-color: #ffd700;
+}
+
+.panel-list {
+    padding: 10px;
+    flex: 1;
+    overflow-y: hidden;
+    /* No scroll, fixed slots */
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    height: 44px;
+    /* Fixed Height per item */
+    box-sizing: border-box;
+}
+
+.list-item.gold {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), transparent);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.rank-idx {
+    width: 24px;
+    font-weight: bold;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.li-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.li-flag {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #fff;
+}
+
+.li-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.li-score {
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 8px;
+    border-radius: 6px;
+    min-width: 30px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* --- Winner Modal --- */
+#winner-modal {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    background: #0f1219;
+    border-radius: 20px;
+    border: 2px solid #2a3b55;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+    text-align: center;
+    padding: 30px;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.modal-title {
+    color: #f6d365;
+    background: linear-gradient(to right, #f6d365, #fda085);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2rem;
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.modal-subtitle {
+    color: #8899a6;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    margin-bottom: 25px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#winner-card {
+    background: #161b27;
+    border: 2px solid #ffd700;
+    border-radius: 15px;
+    padding: 25px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(255, 215, 0, 0.15);
+}
+
+.medal-icon {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.5rem;
+    background: #0f1219;
+    border-radius: 50%;
+    padding: 0 10px;
+    line-height: normal;
+}
+
+#winner-flag {
+    width: 70px;
+    height: 46px;
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    margin-top: 15px;
+    border: 2px solid #fff;
+}
+
+#winner-country-code {
+    font-size: 1.8rem;
+    margin: 10px 0 5px;
+    color: white;
+    font-weight: 800;
+}
+
+.winner-stats {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+}
+
+.mvp-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 15px;
+}
+
+.mvp-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #f6d365;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.mvp-avatar-container {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(45deg, #f6d365, #fda085);
+}
+
+#winner-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #000;
+    object-fit: cover;
+}
+
+#winner-name {
+    margin: 8px 0 0;
+    font-size: 1rem;
+    color: white;
+    font-weight: 600;
+}
+
+/* Progress Bar */
+.progress-container {
+    margin-top: 25px;
+    text-align: left;
+}
+
+.progress-container p {
+    font-size: 0.8rem;
+    color: #888;
+    margin: 0 0 5px 5px;
+}
+
+.progress-bar {
+    height: 6px;
+    background: #2a3b55;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #f6d365;
+    animation: loadNext 6s linear forwards;
+}
+
+@keyframes loadNext {
+    0% {
+        width: 0%;
+    }
+
+    100% {
+        width: 100%;
+    }
+}
+
+/* Kill Feed */
+#kill-feed {
+    position: absolute;
+    bottom: 450px;
+    /* Moved up to clear 420px high panels */
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 40;
+}
+
+.kill-msg {
+    background: rgba(255, 0, 0, 0.4);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    animation: fadeOut 3s forwards;
+    border-left: 3px solid #ff4444;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}

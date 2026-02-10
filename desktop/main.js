@@ -11,16 +11,24 @@ function createMainWindow() {
     height: 800,
     webPreferences: {
       webSecurity: false, // ✅ CORS bypass
-      nodeIntegration: true,
-      contextIsolation: false,
-      allowRunningInsecureContent: true
+      nodeIntegration: false, // Disabled for security with contextIsolation
+      contextIsolation: true, // ✅ Required for contextBridge
+      allowRunningInsecureContent: true,
+      preload: path.join(__dirname, 'preload.js')
     },
     title: 'Flag Battle Desktop',
     icon: path.join(__dirname, 'build', 'icon.png')
   });
 
   // Load the game from existing folder
-  const gamePath = path.join(__dirname, '..', 'games', 'flag_battle', 'index.html');
+  // In development: use relative path
+  // In production: use resources path
+  const isDev = !app.isPackaged;
+  const gamePath = isDev
+    ? path.join(__dirname, '..', 'games', 'flag_battle', 'index.html')
+    : path.join(process.resourcesPath, 'games', 'flag_battle', 'index.html');
+
+  console.log('Loading game from:', gamePath);
   mainWindow.loadFile(gamePath);
 
   mainWindow.webContents.openDevTools(); // For debugging
@@ -47,8 +55,8 @@ function createChatWindow(videoId) {
     title: '📺 YouTube Live Chat',
     webPreferences: {
       webSecurity: false, // ✅ CORS bypass
-      nodeIntegration: true,
-      contextIsolation: false
+      nodeIntegration: true, // Required for chat scraping
+      contextIsolation: false // Required with nodeIntegration
     }
   });
 

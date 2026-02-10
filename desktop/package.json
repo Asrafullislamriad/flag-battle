@@ -17,13 +17,28 @@
         "appId": "com.flagbattle.desktop",
         "productName": "Flag Battle",
         "win": {
-            "target": "nsis",
-            "icon": "build/icon.ico"
+            "target": "nsis"
         },
         "files": [
             "**/*",
             "!**/*.md",
             "!build"
+        ],
+        "extraResources": [
+            {
+                "from": "../games",
+                "to": "games",
+                "filter": [
+                    "**/*"
+                ]
+            },
+            {
+                "from": "../core",
+                "to": "core",
+                "filter": [
+                    "**/*"
+                ]
+            }
         ]
     },
     "dependencies": {
