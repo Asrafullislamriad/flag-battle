@@ -527,8 +527,47 @@ body {
     transition: transform 0.1s;
 }
 
-.color-preset:active {
+.color-preset:active,
+.bg-type-btn:active {
     transform: scale(0.9);
+}
+
+.bg-type-btn {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.2s;
+    position: relative;
+}
+
+.bg-type-btn:hover {
+    border-color: #2ecc71;
+    transform: scale(1.1);
+}
+
+.bg-type-btn.active {
+    border-color: #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+    transform: scale(1.1);
+}
+
+.bg-type-btn.active::after {
+    content: '✓';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #2ecc71;
+    color: white;
+    font-size: 10px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
 }
 
 .volume-indicator {

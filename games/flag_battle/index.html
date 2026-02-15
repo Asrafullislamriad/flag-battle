@@ -109,13 +109,18 @@
 
         <div class="control-group">
             <label>🖼️ ব্যাকগ্রাউন্ড টাইপ</label>
-            <select id="bg-type-select" onchange="changeBgType(this.value)" class="color-picker"
-                style="width: 100%; margin-top: 5px; height: 35px; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 0 10px;">
-                <option value="gradient">গ্র্যাডিয়েন্ট (ডিফল্ট)</option>
-                <option value="solid">সলিড কালার</option>
-                <option value="image">কাস্টম ছবি</option>
-                <option value="video">কাস্টম ভিডিও</option>
-            </select>
+            <div class="color-picker-wrapper" style="margin-top: 8px;">
+                <div class="bg-type-btn" title="গ্র্যাডিয়েন্ট" onclick="changeBgType('gradient')" data-type="gradient"
+                    style="background: radial-gradient(circle, #444 0%, #222 100%);"></div>
+                <div class="bg-type-btn" title="সলিড" onclick="changeBgType('solid')" data-type="solid"
+                    style="background: #333;"></div>
+                <div class="bg-type-btn" title="ছবি" onclick="changeBgType('image')" data-type="image"
+                    style="background: url('https://www.gstatic.com/images/icons/material/system/2x/image_white_24dp.png') center/18px no-repeat #444;">
+                </div>
+                <div class="bg-type-btn" title="ভিডিও" onclick="changeBgType('video')" data-type="video"
+                    style="background: url('https://www.gstatic.com/images/icons/material/system/2x/videocam_white_24dp.png') center/18px no-repeat #444;">
+                </div>
+            </div>
         </div>
 
         <div id="bg-image-control" class="control-group" style="display: none;">

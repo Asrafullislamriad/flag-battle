@@ -87,8 +87,11 @@ function applyColors() {
 
 function changeBgType(type) {
     config.bgType = type;
-    const select = document.getElementById('bg-type-select');
-    if (select) select.value = type;
+
+    // Update active button state
+    document.querySelectorAll('.bg-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
 
     // Show/hide controls
     const imgCtrl = document.getElementById('bg-image-control');
@@ -258,10 +261,17 @@ function applySettings() {
         }
     });
 
+    // Update Background Type buttons
+    document.querySelectorAll('.bg-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === config.bgType);
+    });
+
     const bgSelect = document.getElementById('bg-type-select');
     if (bgSelect) {
-        bgSelect.value = config.bgType || 'gradient';
+        bgSelect.value = config.bgType || 'solid';
         changeBgType(bgSelect.value);
+    } else {
+        changeBgType(config.bgType || 'solid');
     }
 
     updateVolumeBars(config.gameVolume * 100, 'game-vol-bars');
@@ -364,15 +374,7 @@ function initSettingsListeners() {
         }
     });
 
-    // 4. Select Inputs
-    const bgSelect = document.getElementById('bg-type-select');
-    if (bgSelect) {
-        bgSelect.addEventListener('change', (e) => {
-            config.bgType = e.target.value;
-            changeBgType(e.target.value);
-            saveSettings();
-        });
-    }
+    // 4. Select Inputs removed (Moved to button clicks)
 }
 
 // Boot sequence: Initialization

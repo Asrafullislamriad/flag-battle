@@ -23,7 +23,7 @@ let config = {
     gameVolume: 0.5,
     winnerBackgroundEnabled: false, // ✅ Default OFF
     winnerProfileEnabled: true,     // 🆕 Show winner profile pic as bg
-    bgType: 'gradient',             // 🆕 gradient, solid, image, video
+    bgType: 'solid',                // 🆕 solid, gradient, image, video
     customBgImage: null,            // 🆕 Base64 image
     customBgVideo: null,            // 🆕 Base64/URL video
     musicVolume: 0.3,
