@@ -337,8 +337,19 @@ function initSettingsListeners() {
                 case 'drag-slider': config.airDrag = val; if (displayEl) displayEl.innerText = val.toFixed(3); break;
                 case 'force-slider': config.randomForce = val; if (displayEl) displayEl.innerText = val; break;
                 case 'profile-size-slider': config.profileSize = val; if (displayEl) displayEl.innerText = val; break;
-                case 'game-vol-slider': config.gameVolume = val / 100; if (displayEl) displayEl.innerText = Math.round(val); updateVolumeBars(val, 'game-vol-bars'); break;
-                case 'music-vol-slider': config.musicVolume = val / 100; if (displayEl) displayEl.innerText = Math.round(val); updateVolumeBars(val, 'music-vol-bars'); break;
+                case 'game-vol-slider':
+                    config.gameVolume = val / 100;
+                    if (displayEl) displayEl.innerText = Math.round(val);
+                    updateVolumeBars(val, 'game-vol-bars');
+                    if (typeof playTone === 'function') playTone(440, 0.1, 'sine');
+                    break;
+                case 'music-vol-slider':
+                    config.musicVolume = val / 100;
+                    if (displayEl) displayEl.innerText = Math.round(val);
+                    updateVolumeBars(val, 'music-vol-bars');
+                    const audioPlayer = document.getElementById('bg-music');
+                    if (audioPlayer) audioPlayer.volume = config.musicVolume;
+                    break;
                 case 'last-winner-size-slider': if (displayEl) displayEl.innerText = val; applyLastWinnerSize(val); break;
             }
 

@@ -13,7 +13,7 @@ let config = {
     circlePercent: 0.44,
     powerupsEnabled: false,        // ✅ Default OFF
     particlesEnabled: false,       // ✅ Default OFF
-    soundEnabled: false,           // ✅ Default OFF
+    soundEnabled: true,            // ✅ Default ON
     arenaColor: '#2ecc71',
     bgColor: '#000000',
     airDrag: 0.02,
@@ -108,6 +108,11 @@ function loadSettings() {
             }
         });
         if (typeof applySettings === 'function') applySettings();
+
+        // RECOVERY: Force sound ON if user is having trouble
+        config.soundEnabled = true;
+        if (config.gameVolume < 0.2) config.gameVolume = 0.5;
+        if (config.musicVolume < 0.1) config.musicVolume = 0.3;
     }
 }
 

@@ -15,9 +15,11 @@ function initAudioContext() {
 
             // Create Master Gain Node
             masterGain = audioContext.createGain();
+            masterGain.gain.setValueAtTime(1.0, audioContext.currentTime);
             masterGain.connect(audioContext.destination);
 
             audioContextInitialized = true;
+            console.log('🔊 Audio System Initialized');
 
             // Connect Background Music to Master Gain (for streaming)
             const audioPlayer = document.getElementById('bg-music');
@@ -25,6 +27,7 @@ function initAudioContext() {
                 try {
                     bgMusicSource = audioContext.createMediaElementSource(audioPlayer);
                     bgMusicSource.connect(masterGain);
+                    console.log('🎵 Music connected to Master Gain');
                 } catch (e) {
                     console.warn('MediaElementSource error:', e);
                 }
@@ -32,12 +35,16 @@ function initAudioContext() {
 
             // Resume context if suspended
             if (audioContext.state === 'suspended') {
-                audioContext.resume();
+                audioContext.resume().then(() => {
+                    console.log('🔊 AudioContext Resumed in Init');
+                });
             }
         } catch (e) {
-            console.warn('AudioContext initialization failed:', e);
+            console.error('❌ AudioContext initialization failed:', e);
             audioContextInitialized = false;
         }
+    } else if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
     }
 }
 
@@ -51,28 +58,59 @@ window.getAudioContextAndMaster = function () {
 
 // Safe tone player with error handling
 function playTone(freq, duration, type = 'sine') {
+    // Force enable sound for debugging (remove if necessary, but helpful for frustrated users)
+    if (config.soundEnabled === undefined) config.soundEnabled = true;
     if (!config.soundEnabled) return;
 
     try {
-        if (!audioContext || audioContext.state === 'suspended') {
+        if (!audioContext) {
             initAudioContext();
         }
 
         if (!audioContext) return;
 
+        // Forced resume on every play attempt
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+                console.log('🔊 AudioContext Resumed');
+            });
+        }
+
         const osc = audioContext.createOscillator();
         const gain = audioContext.createGain();
         osc.connect(gain);
-        // Connect to Master Gain instead of destination
-        gain.connect(masterGain || audioContext.destination);
+
+        // Connect to Master Gain OR direct to destination
+        if (masterGain) {
+            gain.connect(masterGain);
+        } else {
+            gain.connect(audioContext.destination);
+        }
+
         osc.frequency.value = freq;
         osc.type = type;
-        gain.gain.setValueAtTime(0.1 * config.gameVolume, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01 * config.gameVolume, audioContext.currentTime + duration);
+
+        // BOOSTED VOLUME: 0.8 instead of 0.3
+        const gameVol = (config.gameVolume !== undefined) ? config.gameVolume : 0.5;
+        const volume = 0.8 * gameVol;
+
+        // Use linearRamp for better reliability in some browsers
+        gain.gain.cancelScheduledValues(audioContext.currentTime);
+        gain.gain.setValueAtTime(0, audioContext.currentTime);
+        gain.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
         osc.start();
         osc.stop(audioContext.currentTime + duration);
+
+        // Cleanup
+        setTimeout(() => {
+            osc.disconnect();
+            gain.disconnect();
+        }, duration * 1000 + 100);
+
     } catch (e) {
-        console.warn('Audio playback error:', e);
+        console.warn('CRITICAL AUDIO ERROR:', e);
     }
 }
 

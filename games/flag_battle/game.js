@@ -1493,7 +1493,7 @@ function handleWinner(winner) {
 
                 // Special shout-out every 3 rounds
                 if (roundNumber % 3 === 0) {
-                    message = "Shout out to " + winner.country.name + " ummma";
+                    message = "Shout out to " + winner.country.name;
                 }
 
                 const u = new SpeechSynthesisUtterance(message);
@@ -1728,148 +1728,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 🆕 Last Winner Size Slider
     const lastWinnerSizeSlider = document.getElementById('last-winner-size-slider');
     console.log('🔍 Last Winner Size Slider element:', lastWinnerSizeSlider);
-    if (lastWinnerSizeSlider) {
-        console.log('✅ Attaching event listener to Last Winner size slider');
-        lastWinnerSizeSlider.addEventListener('input', (e) => {
-            const size = parseInt(e.target.value);
-            console.log('🎚️ Slider moved to:', size);
-            document.getElementById('last-winner-size-val').innerText = size;
-            applyLastWinnerSize(size);
-        });
-    } else {
-        console.error('❌ Last Winner Size Slider not found!');
-    }
-
-    // Color pickers
-    const arenaColorPicker = document.getElementById('arena-color');
-    if (arenaColorPicker) {
-        arenaColorPicker.addEventListener('input', (e) => {
-            config.arenaColor = e.target.value;
-            applyColors();
-        });
-    }
-
-    const bgColorPicker = document.getElementById('bg-color');
-    if (bgColorPicker) {
-        bgColorPicker.addEventListener('input', (e) => {
-            config.bgColor = e.target.value;
-            applyColors();
-        });
-    }
-
-    // Toggles
-    const winnerBgToggle = document.getElementById('winner-bg-toggle');
-    if (winnerBgToggle) {
-        winnerBgToggle.addEventListener('change', (e) => {
-            config.winnerBackgroundEnabled = e.target.checked;
-
-            if (!config.winnerBackgroundEnabled) {
-                // Immediate reset if turned off
-                currentArenaTexture = null;
-                const winnerBg = document.getElementById('winner-bg');
-                if (winnerBg) winnerBg.style.backgroundImage = 'none';
-
-                if (arenaBody) {
-                    Matter.Composite.remove(engine.world, arenaBody);
-                    createArena();
-                }
-            }
-        });
-    }
-
-    const glowToggle = document.getElementById('glow-toggle');
-    if (glowToggle) {
-        glowToggle.addEventListener('change', (e) => {
-            config.glowEffect = e.target.checked;
-        });
-    }
-
-    const rotationToggle = document.getElementById('rotation-toggle');
-    if (rotationToggle) {
-        rotationToggle.addEventListener('change', (e) => {
-            config.allowRotation = e.target.checked;
-            // Update existing flags immediately
-            flags.forEach(b => {
-                if (config.allowRotation && config.roundFlags) {
-                    Matter.Body.setInertia(b, b.mass * 10); // Restore rotation (approx)
-                    Matter.Body.setAngularVelocity(b, 0); // Reset spin on switch
-                } else {
-                    Matter.Body.setInertia(b, Infinity); // Stop rotation
-                    Matter.Body.setAngularVelocity(b, 0);
-                    Matter.Body.setAngle(b, 0); // Reset angle to upright
-                }
-            });
-        });
-    }
-
-    const trailsToggle = document.getElementById('trails-toggle');
-    if (trailsToggle) {
-        trailsToggle.addEventListener('change', (e) => {
-            config.trailsEffect = e.target.checked;
-        });
-    }
-
-    const powerupsToggle = document.getElementById('powerups-toggle');
-    if (powerupsToggle) {
-        powerupsToggle.addEventListener('change', (e) => {
-            config.powerupsEnabled = e.target.checked;
-        });
-    }
-
-    const particlesToggle = document.getElementById('particles-toggle');
-    if (particlesToggle) {
-        particlesToggle.addEventListener('change', (e) => {
-            config.particlesEnabled = e.target.checked;
-        });
-    }
-
-    const soundToggle = document.getElementById('sound-toggle');
-    if (soundToggle) {
-        soundToggle.addEventListener('change', (e) => {
-            config.soundEnabled = e.target.checked;
-        });
-    }
-
-    const roundFlagsToggle = document.getElementById('round-flags-toggle');
-    if (roundFlagsToggle) {
-        roundFlagsToggle.addEventListener('change', (e) => {
-            config.roundFlags = e.target.checked;
-            // Immediate effect? No, simpler to require restart or wait for next round.
-            // But user might want to see it now.
-            // Converting existing bodies is hard. Let's just say "Next Round" or force restart.
-            // Let's force a restart for instant gratification.
-            if (flags.length > 0) {
-                startNewRound();
-            }
-        });
-    }
-
-    // Volume sliders
-    const gameVolSlider = document.getElementById('game-vol-slider');
-    if (gameVolSlider) {
-        gameVolSlider.addEventListener('input', (e) => {
-            const val = parseInt(e.target.value);
-            config.gameVolume = val / 100;
-            document.getElementById('game-vol-val').innerText = val;
-            updateVolumeBars(val, 'game-vol-bars');
-            playTone(440, 0.1, 'sine');
-        });
-    }
-
-    const musicVolSlider = document.getElementById('music-vol-slider');
-    if (musicVolSlider) {
-        musicVolSlider.addEventListener('input', (e) => {
-            const val = parseInt(e.target.value);
-            config.musicVolume = val / 100;
-            document.getElementById('music-vol-val').innerText = val;
-            updateVolumeBars(val, 'music-vol-bars');
-
-            const audioPlayer = document.getElementById('bg-music');
-            if (audioPlayer && audioPlayer.src) {
-                audioPlayer.volume = config.musicVolume;
-            }
-        });
-    }
+    // --- All settings listeners moved to utils.js for centralized persistence ---
 });
 
 // Start game when page loads

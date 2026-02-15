@@ -250,11 +250,15 @@
             </label>
         </div>
 
-        <div class="control-group">
+        <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
             <label class="checkbox-label">
                 <input type="checkbox" id="sound-toggle" checked>
                 <span>🔊 সাউন্ড ইফেক্ট</span>
             </label>
+            <button onclick="if(typeof playTone === 'function') playTone(440, 0.2, 'sine')"
+                style="background: #3498db; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                🎺 টেস্ট
+            </button>
         </div>
 
         <div class="control-group">
