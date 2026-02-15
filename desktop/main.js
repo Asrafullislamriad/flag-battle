@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 let chatWindow;
@@ -20,18 +21,29 @@ function createMainWindow() {
     icon: path.join(__dirname, 'build', 'icon.png')
   });
 
-  // Load the game from existing folder
-  // In development: use relative path
-  // In production: use resources path
+  // Load the game
+  // Development (npm start): Load from local files
+  // Production (installed app): Load from GitHub Pages
   const isDev = !app.isPackaged;
-  const gamePath = isDev
-    ? path.join(__dirname, '..', 'games', 'flag_battle', 'index.html')
-    : path.join(process.resourcesPath, 'games', 'flag_battle', 'index.html');
 
-  console.log('Loading game from:', gamePath);
-  mainWindow.loadFile(gamePath);
+  if (isDev) {
+    // Development mode - local files
+    const gamePath = path.join(__dirname, '..', 'games', 'flag_battle', 'index.html');
+    console.log('🔧 Development mode - Loading game from:', gamePath);
+    mainWindow.loadFile(gamePath);
+  } else {
+    // Production mode - GitHub Pages
+    const gameUrl = 'https://asrafullislamriad.github.io/flag-battle/games/flag_battle/';
+    console.log('🚀 Production mode - Loading game from:', gameUrl);
+    mainWindow.loadURL(gameUrl);
+  }
 
   mainWindow.webContents.openDevTools(); // For debugging
+
+  // Inject recording/streaming overlay on all pages
+  mainWindow.webContents.on('did-finish-load', () => {
+    injectOverlay();
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -239,6 +251,123 @@ ipcMain.on('stop-stream', (event) => {
   streamer.stopStream();
   event.reply('stream-status', { status: 'stopped', message: 'Stream stopped' });
 });
+
+// Simple recording state
+let isRecording = false;
+
+// Toggle recording handler
+ipcMain.on('toggle-recording', async (event) => {
+  if (!isRecording) {
+    // Start recording - handled in renderer
+    isRecording = true;
+    console.log('🎥 Recording started');
+    event.reply('recording-state-changed', { recording: true });
+  } else {
+    // Stop recording
+    isRecording = false;
+    console.log('⏹️ Recording stopped');
+    event.reply('recording-state-changed', { recording: false });
+  }
+});
+
+// Save recorded video
+ipcMain.on('save-recording', (event, videoBlob) => {
+  const { dialog } = require('electron');
+  const fs = require('fs');
+
+  dialog.showSaveDialog(mainWindow, {
+    defaultPath: `recording-${Date.now()}.webm`,
+    filters: [{ name: 'Videos', extensions: ['webm'] }]
+  }).then(result => {
+    if (!result.canceled && result.filePath) {
+      // Convert base64 to buffer and save
+      const base64Data = videoBlob.replace(/^data:video\/webm;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(result.filePath, buffer);
+      console.log('✅ Recording saved:', result.filePath);
+    }
+  });
+});
+
+// Simple inline overlay injection - NO external files!
+function injectOverlay() {
+  mainWindow.webContents.executeJavaScript(`
+    (function() {
+      // Recording state
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      let stream = null;
+      
+      // Simple floating record button
+      const btn = document.createElement('div');
+      btn.id = 'electron-record-btn';
+      btn.innerHTML = '🎥';
+      btn.style.cssText = 'position:fixed;bottom:20px;right:20px;width:60px;height:60px;background:linear-gradient(135deg,#e74c3c,#c0392b);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;z-index:999999;box-shadow:0 4px 20px rgba(231,76,60,0.5);transition:transform 0.2s;';
+      
+      btn.onclick = async function() {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+          // Start recording
+          try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+              video: { mediaSource: 'screen' },
+              audio: false
+            });
+            
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(stream, {
+              mimeType: 'video/webm;codecs=vp9'
+            });
+            
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) {
+                recordedChunks.push(e.data);
+              }
+            };
+            
+            mediaRecorder.onstop = () => {
+              const blob = new Blob(recordedChunks, { type: 'video/webm' });
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (window.electronAPI && window.electronAPI.saveRecording) {
+                  window.electronAPI.saveRecording(reader.result);
+                }
+              };
+              reader.readAsDataURL(blob);
+              
+              // Stop all tracks
+              stream.getTracks().forEach(track => track.stop());
+            };
+            
+            mediaRecorder.start();
+            
+            // Update button
+            btn.innerHTML = '⏹️';
+            btn.style.background = 'linear-gradient(135deg, #27ae60, #229954)';
+            console.log('✅ Recording started');
+            
+          } catch (error) {
+            console.error('❌ Failed to start recording:', error);
+            alert('Failed to start recording. Please try again.');
+          }
+        } else {
+          // Stop recording
+          mediaRecorder.stop();
+          
+          // Update button
+          btn.innerHTML = '🎥';
+          btn.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+          console.log('⏹️ Recording stopped');
+        }
+      };
+      
+      btn.onmouseenter = function() { this.style.transform = 'scale(1.1)'; };
+      btn.onmouseleave = function() { this.style.transform = 'scale(1)'; };
+      
+      document.body.appendChild(btn);
+      console.log('✅ Simple record button added');
+    })();
+  `).catch(err => console.error('Failed to inject button:', err));
+}
 
 // App lifecycle
 app.whenReady().then(() => {

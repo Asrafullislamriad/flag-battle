@@ -39,5 +39,57 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     onStreamStatus: (callback) => {
         ipcRenderer.on('stream-status', (event, data) => callback(data));
+    },
+
+    // Recording & Streaming (for overlay)
+    startRecording: async (settings) => {
+        return new Promise((resolve, reject) => {
+            ipcRenderer.send('start-recording', settings);
+            ipcRenderer.once('recording-started', (event, data) => {
+                if (data.success) resolve(data);
+                else reject(new Error(data.error));
+            });
+        });
+    },
+
+    stopRecording: async () => {
+        return new Promise((resolve) => {
+            ipcRenderer.send('stop-recording');
+            ipcRenderer.once('recording-stopped', (event, data) => resolve(data));
+        });
+    },
+
+    startStreaming: async (settings) => {
+        return new Promise((resolve, reject) => {
+            ipcRenderer.send('start-streaming', settings);
+            ipcRenderer.once('streaming-started', (event, data) => {
+                if (data.success) resolve(data);
+                else reject(new Error(data.error));
+            });
+        });
+    },
+
+    stopStreaming: async () => {
+        return new Promise((resolve) => {
+            ipcRenderer.send('stop-streaming');
+            ipcRenderer.once('streaming-stopped', (event, data) => resolve(data));
+        });
+    },
+
+    chooseSavePath: async () => {
+        return new Promise((resolve) => {
+            ipcRenderer.send('choose-save-path');
+            ipcRenderer.once('save-path-chosen', (event, path) => resolve(path));
+        });
+    },
+
+    // Save recording
+    saveRecording: (videoBlob) => {
+        ipcRenderer.send('save-recording', videoBlob);
+    },
+
+    // Simple toggle recording
+    toggleRecording: () => {
+        ipcRenderer.send('toggle-recording');
     }
 });

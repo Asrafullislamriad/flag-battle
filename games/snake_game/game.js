@@ -1073,3 +1073,47 @@ setInterval(() => {
             }
         });
 }, 500); // Poll every 0.5s
+
+// --- YouTube Live Integration ---
+// Listen for viewer spawn requests from snake_bridge.js
+window.addEventListener('viewer-spawn-request', (event) => {
+    const request = event.detail;
+    console.log(`🎮 Viewer spawn request received:`, request);
+
+    // Spawn snake for viewer
+    spawnViewerSnake(request);
+});
+
+// Spawn snake from viewer request
+function spawnViewerSnake(request) {
+    const { username, profilePic, isProfile, countryCode } = request;
+
+    // Determine what to use for snake
+    let finalCountryCode = countryCode;
+    let finalProfilePic = null;
+
+    if (isProfile && profilePic) {
+        // Use profile picture
+        finalProfilePic = profilePic;
+        // Use a default country code for profile users (or detect from profile)
+        finalCountryCode = 'UN'; // United Nations as default
+    } else if (countryCode) {
+        // Use country flag
+        finalCountryCode = countryCode;
+    } else {
+        console.warn(`⚠️ Invalid viewer request:`, request);
+        return;
+    }
+
+    console.log(`🐍 Spawning snake for @${username} (${isProfile ? 'Profile' : finalCountryCode})`);
+
+    // Create new snake
+    const newSnake = new Snake(finalCountryCode, username, finalProfilePic, false);
+    snakes.push(newSnake);
+
+    // Play spawn sound
+    playSpawnSound();
+
+    console.log(`✅ Snake spawned! Total snakes: ${snakes.length}`);
+}
+

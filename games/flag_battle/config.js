@@ -22,7 +22,16 @@ let config = {
     trailsEffect: false,           // ✅ Default OFF
     gameVolume: 0.5,
     winnerBackgroundEnabled: false, // ✅ Default OFF
+    winnerProfileEnabled: true,     // 🆕 Show winner profile pic as bg
+    bgType: 'gradient',             // 🆕 gradient, solid, image, video
+    customBgImage: null,            // 🆕 Base64 image
+    customBgVideo: null,            // 🆕 Base64/URL video
     musicVolume: 0.3,
+    profileSize: 32,                // 🆕 YouTube profile resolution (s32, s64, etc.)
+    flagBorderEnabled: false,       // 🆕 Draw border around flags
+    showPlayerNames: true,          // 🆕 Show names/profile pics below flags
+    roundFlagsEnabled: false,       // 🆕 Use circular flag shapes
+    rotationEnabled: true,          // 🆕 Flag rotation (rolling)
     gapSize: 50 // Degrees
 };
 
@@ -92,8 +101,13 @@ function saveSettings() {
 function loadSettings() {
     const saved = safeLocalStorageGet('flagBattleSettings');
     if (saved) {
-        Object.assign(config, saved);
-        applySettings();
+        // Safe merge to avoid losing new default keys
+        Object.keys(saved).forEach(key => {
+            if (config.hasOwnProperty(key)) {
+                config[key] = saved[key];
+            }
+        });
+        if (typeof applySettings === 'function') applySettings();
     }
 }
 
@@ -142,101 +156,14 @@ function closeStats() {
     document.getElementById('stats-modal').style.display = 'none';
 }
 
-// Update UI elements based on loaded config
-function applySettings() {
-    // Helper to safely set value if element exists
-    const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.value = val;
-            // Also update the text display next to slider if exists
-            // ID pattern: [name]-slider -> [name]-val
-            const displayId = id.replace('slider', 'val').replace('input', 'val');
-            const displayEl = document.getElementById(displayId);
-            if (displayEl) {
-                // Formatting specific values
-                if (id === 'circle-slider') displayEl.innerText = Math.round(val);
-                else if (id === 'size-slider') displayEl.innerText = val.toFixed(1);
-                else if (id === 'drag-slider') displayEl.innerText = val.toFixed(3);
-                else if (id === 'speed-slider') displayEl.innerText = (val * 100).toFixed(1); // Approximate conversion back
-                else displayEl.innerText = val;
-            }
-        }
-    };
+// applySettings removed - now handled in utils.js to avoid duplication
 
-    const setCheck = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.checked = val;
-    };
-
-    setVal('circle-slider', config.circlePercent * 100);
-    setVal('count-slider', config.flagCount);
-    setVal('grav-slider', config.gravity);
-    // Speed slider logic in game.js multiplies by 0.01, so we reverse it roughly for display
-    // But simplified: just set value directly if we stored the raw slider value. 
-    // Actually config stores the *result*, so we need to reverse calc or just set slider to match visual.
-    // Let's just trust the config matches the slider ranges roughly.
-
-    // Explicit mappings
-    if (document.getElementById('speed-slider')) document.getElementById('speed-slider').value = config.rotationSpeed / 0.01;
-    if (document.getElementById('speed-val')) document.getElementById('speed-val').innerText = (config.rotationSpeed / 0.01).toFixed(1);
-
-    setVal('bounce-slider', config.bounce);
-    setVal('thick-slider', config.thickness);
-    setVal('gap-slider', config.gapSize);
-    setVal('size-slider', config.scale);
-    setVal('drag-slider', config.airDrag);
-    setVal('force-slider', config.randomForce);
-
-    // 🆕 Last Winner Size Slider
-    const lastWinnerSize = parseInt(localStorage.getItem('last_winner_size')) || 150;
-    setVal('last-winner-size-slider', lastWinnerSize);
-    applyLastWinnerSize(lastWinnerSize);
-
-    setVal('game-vol-slider', config.gameVolume * 100);
-    setVal('music-vol-slider', config.musicVolume * 100);
-
-    setCheck('powerups-toggle', config.powerupsEnabled);
-    setCheck('winner-bg-toggle', config.winnerBackgroundEnabled);
-    setCheck('particles-toggle', config.particlesEnabled);
-    setCheck('sound-toggle', config.soundEnabled);
-    setCheck('glow-toggle', config.glowEffect);
-    setCheck('trails-toggle', config.trailsEffect);
-
-
-    // Apply colors
-    if (document.getElementById('arena-color')) document.getElementById('arena-color').value = config.arenaColor;
-    if (document.getElementById('bg-color')) document.getElementById('bg-color').value = config.bgColor;
-}
-
-// Load audio settings from localStorage
-function loadAudioSettings() {
-    const savedSound = localStorage.getItem('audio_sound_enabled');
-    const savedMusic = localStorage.getItem('audio_music_volume');
-
-    if (savedSound !== null) {
-        config.soundEnabled = savedSound === 'true';
-        console.log('📌 Loaded sound setting:', config.soundEnabled);
-    }
-
-    if (savedMusic !== null) {
-        config.musicVolume = parseFloat(savedMusic);
-        console.log('📌 Loaded music volume:', config.musicVolume);
-    }
-}
-
-// Save audio settings to localStorage
-function saveAudioSettings() {
-    localStorage.setItem('audio_sound_enabled', config.soundEnabled);
-    localStorage.setItem('audio_music_volume', config.musicVolume);
-    console.log('💾 Audio settings saved');
-}
+// load/saveAudioSettings removed - simplified to main config persistence
 
 // Load settings on page load
 window.addEventListener('DOMContentLoaded', () => {
-    loadAudioSettings();
-    applySettings();
-    loadLastWinner(); // 🆕 Load last winner on startup
+    loadSettings();
+    loadLastWinner();
 });
 
 // 🆕 Last Winner Functions

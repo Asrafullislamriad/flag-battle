@@ -1,0 +1,228 @@
+/* Global Recording/Streaming Overlay Styles */
+
+/* Floating Button */
+#recording-overlay-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    z-index: 999999;
+    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    backdrop-filter: blur(10px);
+}
+
+#recording-overlay-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(231, 76, 60, 0.7);
+}
+
+#recording-overlay-btn:active {
+    transform: scale(0.95);
+}
+
+#recording-overlay-btn.recording {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    animation: recordingPulse 1.5s infinite;
+}
+
+#recording-overlay-btn.streaming {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    animation: streamingPulse 1.5s infinite;
+}
+
+@keyframes recordingPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 20px rgba(231, 76, 60, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 4px 30px rgba(231, 76, 60, 1), 0 0 0 10px rgba(231, 76, 60, 0.3);
+    }
+}
+
+@keyframes streamingPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 20px rgba(155, 89, 182, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 4px 30px rgba(155, 89, 182, 1), 0 0 0 10px rgba(155, 89, 182, 0.3);
+    }
+}
+
+/* Control Panel */
+#recording-overlay-panel {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    width: 350px;
+    max-height: 80vh;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 2px solid rgba(231, 76, 60, 0.6);
+    border-radius: 20px;
+    padding: 20px;
+    z-index: 999998;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+    display: none;
+    overflow-y: auto;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+#recording-overlay-panel.show {
+    display: block;
+    transform: translateY(0);
+    opacity: 1;
+}
+
+#recording-overlay-panel h3 {
+    margin: 0 0 15px 0;
+    color: #e74c3c;
+    font-size: 20px;
+    text-align: center;
+    border-bottom: 2px solid rgba(231, 76, 60, 0.5);
+    padding-bottom: 10px;
+}
+
+/* Control Groups */
+.overlay-control-group {
+    margin-bottom: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.overlay-control-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.overlay-control-group select,
+.overlay-control-group input[type="text"],
+.overlay-control-group input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 13px;
+}
+
+.overlay-control-group input[type="range"] {
+    width: 100%;
+    accent-color: #e74c3c;
+}
+
+/* Action Buttons */
+.overlay-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.overlay-btn-record {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
+.overlay-btn-record:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5);
+}
+
+.overlay-btn-stream {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    color: white;
+}
+
+.overlay-btn-stream:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(155, 89, 182, 0.5);
+}
+
+.overlay-btn-stop {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    color: white;
+}
+
+.overlay-btn-stop:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(149, 165, 166, 0.5);
+}
+
+.overlay-btn:active {
+    transform: scale(0.95);
+}
+
+.overlay-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Stats Display */
+.overlay-stats {
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #2ecc71;
+}
+
+.overlay-stats div {
+    margin: 4px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Scrollbar */
+#recording-overlay-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+#recording-overlay-panel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+#recording-overlay-panel::-webkit-scrollbar-thumb {
+    background: #e74c3c;
+    border-radius: 10px;
+}
+
+#recording-overlay-panel::-webkit-scrollbar-thumb:hover {
+    background: #c0392b;
+}

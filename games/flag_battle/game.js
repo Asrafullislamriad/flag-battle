@@ -1166,18 +1166,31 @@ function gameRender() {
                 ctx.drawImage(b.img, -drawW / 2, -drawH / 2, drawW, drawH);
                 ctx.restore();
 
-                // No border for cleaner look
+                // Draw border if enabled
+                if (config.flagBorderEnabled) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
 
                 // Eyes? (Optional Countryball feature)
                 // drawCountryballEyes(ctx, b.radius);
             } else {
                 // Standard Rectangular Flag
                 ctx.drawImage(b.img, -b.w / 2, -b.h / 2, b.w, b.h);
-                // No border for cleaner look
+
+                // Draw border if enabled
+                if (config.flagBorderEnabled) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
+                }
             }
 
             // Draw User Name (If Viewer Request)
-            if (b.isUserRequest && b.userData && b.userData.name) {
+            if (config.showPlayerNames && b.isUserRequest && b.userData && b.userData.name) {
                 ctx.save();
                 ctx.rotate(-b.angle); // Keep text horizontal
                 ctx.font = "bold 14px Arial";
@@ -1205,9 +1218,8 @@ function gameRender() {
 
                 // Draw name below flag
                 const name = b.userData.name.length > 10 ? b.userData.name.substring(0, 8) + '..' : b.userData.name;
-                ctx.strokeText(name, 0, b.h / 2 + 20);
-                ctx.fillText(name, 0, b.h / 2 + 20);
-
+                ctx.strokeText(name, 0, b.h / 2 + 15);
+                ctx.fillText(name, 0, b.h / 2 + 15);
                 ctx.restore();
             }
 
@@ -1255,8 +1267,17 @@ function handleWinner(winner) {
             // Update Winner Background (Rotated 90deg)
             const winnerBg = document.getElementById('winner-bg');
             if (winnerBg) {
-                const filename = winner.country.code === 'ad' ? 'andorra' : winner.country.code;
-                winnerBg.style.backgroundImage = `url(../assets/flags/${filename}.png)`;
+                // Use profile pic if enabled and available
+                if (config.winnerProfileEnabled && winner.country.isProfile && winner.country.flagSrc) {
+                    let highResUrl = winner.country.flagSrc;
+                    if (highResUrl.includes('.ggpht.com')) {
+                        highResUrl = highResUrl.replace(/=s\d+-/, `=s${config.profileSize || 32}-`);
+                    }
+                    winnerBg.style.backgroundImage = `url(${highResUrl})`;
+                } else {
+                    const filename = winner.country.code === 'ad' ? 'andorra' : winner.country.code;
+                    winnerBg.style.backgroundImage = `url(../assets/flags/${filename}.png)`;
+                }
             }
         } else {
             currentArenaTexture = null;
@@ -1316,9 +1337,9 @@ function handleWinner(winner) {
             console.log('🔍 Original YouTube URL:', highQualityPic);
 
             if (highQualityPic && highQualityPic.includes('.ggpht.com')) {
-                // Replace s32, s48, s64, etc. with s800
-                highQualityPic = highQualityPic.replace(/=s\d+-/, '=s800-');
-                console.log('📸 Upgraded to s800:', highQualityPic);
+                // Replace s32, s48, s64, etc. with configured size
+                highQualityPic = highQualityPic.replace(/=s\d+-/, `=s${config.profileSize || 32}-`);
+                console.log(`📸 Upgraded to s${config.profileSize || 32}:`, highQualityPic);
             }
 
             // PRELOAD IMAGE BEFORE SHOWING
@@ -1437,9 +1458,9 @@ function handleWinner(winner) {
 
                         let avatarUrl = sup.user.pic || '';
 
-                        // Upgrade YouTube profile pic to s800 for high quality
+                        // Upgrade YouTube profile pic to configured resolution for high quality
                         if (avatarUrl && avatarUrl.includes('yt3.ggpht.com')) {
-                            avatarUrl = avatarUrl.replace(/=s\d+-/, '=s800-');
+                            avatarUrl = avatarUrl.replace(/=s\d+-/, `=s${config.profileSize || 32}-`);
                         }
 
                         const cleanName = String(sup.user.name).replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1702,109 +1723,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Flag count
-    const countSlider = document.getElementById('count-slider');
-    if (countSlider) {
-        countSlider.addEventListener('input', (e) => {
-            config.flagCount = Math.min(parseInt(e.target.value), MAX_FLAGS);
-            document.getElementById('count-val').innerText = config.flagCount;
-        });
-    }
-
-    // Gravity
-    const gravSlider = document.getElementById('grav-slider');
-    if (gravSlider) {
-        gravSlider.addEventListener('input', (e) => {
-            config.gravity = parseFloat(e.target.value);
-            document.getElementById('grav-val').innerText = config.gravity;
-            if (engine) engine.world.gravity.y = config.gravity;
-        });
-    }
-
-    // Rotation speed
-    const speedSlider = document.getElementById('speed-slider');
-    if (speedSlider) {
-        speedSlider.addEventListener('input', (e) => {
-            let val = parseFloat(e.target.value);
-            config.rotationSpeed = val * 0.01;
-            document.getElementById('speed-val').innerText = val.toFixed(1);
-        });
-    }
-
-    // Bounce
-    const bounceSlider = document.getElementById('bounce-slider');
-    if (bounceSlider) {
-        bounceSlider.addEventListener('input', (e) => {
-            config.bounce = parseFloat(e.target.value);
-            document.getElementById('bounce-val').innerText = config.bounce;
-            flags.forEach(f => f.restitution = config.bounce);
-        });
-    }
-
-    // Wall thickness
-    const thickSlider = document.getElementById('thick-slider');
-    if (thickSlider) {
-        thickSlider.addEventListener('input', (e) => {
-            config.thickness = parseFloat(e.target.value);
-            document.getElementById('thick-val').innerText = config.thickness;
-            // Wait for next round for physics update or force update (not recommended mid-game)
-        });
-    }
-
-    // Gap Size Slider
-    const gapSlider = document.getElementById('gap-slider');
-    if (gapSlider) {
-        gapSlider.addEventListener('input', (e) => {
-            config.gapSize = parseFloat(e.target.value);
-            document.getElementById('gap-val').innerText = config.gapSize;
-        });
-
-        gapSlider.addEventListener('change', () => {
-            saveSettings();
-            startNewRound(); // Restart to apply new arena structure
-        });
-    }
-
-    if (engine && arenaBody) {
-        Matter.Composite.remove(engine.world, arenaBody);
-        createArena();
-    }
-
-    // Flag size
-    const sizeSlider = document.getElementById('size-slider');
-    if (sizeSlider) {
-        sizeSlider.addEventListener('input', (e) => {
-            const newScale = parseFloat(e.target.value);
-            document.getElementById('size-val').innerText = newScale;
-            const ratio = newScale / config.scale;
-            config.scale = newScale;
-
-            flags.forEach(f => {
-                Matter.Body.scale(f, ratio, ratio);
-                f.w = f.w * ratio;
-                f.h = f.h * ratio;
-            });
-        });
-    }
-
-    // Air drag
-    const dragSlider = document.getElementById('drag-slider');
-    if (dragSlider) {
-        dragSlider.addEventListener('input', (e) => {
-            config.airDrag = parseFloat(e.target.value);
-            document.getElementById('drag-val').innerText = config.airDrag.toFixed(3);
-            flags.forEach(f => f.frictionAir = config.airDrag);
-        });
-    }
-
-    // Random force
-    const forceSlider = document.getElementById('force-slider');
-    if (forceSlider) {
-        forceSlider.addEventListener('input', (e) => {
-            config.randomForce = parseFloat(e.target.value);
-            document.getElementById('force-val').innerText = config.randomForce;
-        });
-    }
+    // --- Settings listeners removed (Moved to utils.js for centralized persistence) ---
 
     // 🆕 Last Winner Size Slider
     const lastWinnerSizeSlider = document.getElementById('last-winner-size-slider');

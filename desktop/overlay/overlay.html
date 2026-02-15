@@ -1,0 +1,87 @@
+<!-- Global Recording/Streaming Overlay -->
+<div id="recording-overlay-btn" title="Recording & Streaming Controls">
+    🎥
+</div>
+
+<div id="recording-overlay-panel">
+    <h3>🎥 Recording & Streaming</h3>
+
+    <!-- Quick Actions -->
+    <div class="overlay-control-group">
+        <button class="overlay-btn overlay-btn-record" id="overlay-start-record">
+            <span>⏺️</span> Start Recording
+        </button>
+        <button class="overlay-btn overlay-btn-stream" id="overlay-start-stream">
+            <span>🔴</span> Go Live
+        </button>
+        <button class="overlay-btn overlay-btn-stop" id="overlay-stop-all" style="display: none;">
+            <span>⏹️</span> Stop
+        </button>
+    </div>
+
+    <!-- Video Settings -->
+    <div class="overlay-control-group">
+        <label>📺 Resolution</label>
+        <select id="overlay-resolution">
+            <option value="1280x720">720p (1280x720)</option>
+            <option value="1920x1080" selected>1080p (1920x1080)</option>
+            <option value="2560x1440">1440p (2560x1440)</option>
+            <option value="3840x2160">4K (3840x2160)</option>
+        </select>
+    </div>
+
+    <div class="overlay-control-group">
+        <label>🎬 FPS: <span id="overlay-fps-value">30</span></label>
+        <input type="range" id="overlay-fps" min="15" max="60" step="15" value="30">
+    </div>
+
+    <div class="overlay-control-group">
+        <label>📊 Bitrate: <span id="overlay-bitrate-value">4500</span> Kbps</label>
+        <input type="range" id="overlay-bitrate" min="1000" max="8000" step="500" value="4500">
+    </div>
+
+    <div class="overlay-control-group">
+        <label>📐 Aspect Ratio</label>
+        <select id="overlay-aspect-ratio">
+            <option value="16:9" selected>16:9 (Widescreen)</option>
+            <option value="4:3">4:3 (Standard)</option>
+            <option value="1:1">1:1 (Square)</option>
+            <option value="custom">Custom</option>
+        </select>
+    </div>
+
+    <!-- Streaming Settings -->
+    <div class="overlay-control-group">
+        <label>🔑 YouTube Stream Key (Optional)</label>
+        <input type="text" id="overlay-stream-key" placeholder="Enter your stream key">
+    </div>
+
+    <!-- Recording Settings -->
+    <div class="overlay-control-group">
+        <label>💾 Save Location</label>
+        <input type="text" id="overlay-save-path" placeholder="Default: Videos folder" readonly>
+        <button class="overlay-btn" id="overlay-choose-path" style="margin-top: 8px; padding: 8px;">
+            📁 Choose Folder
+        </button>
+    </div>
+
+    <!-- Stats Display -->
+    <div class="overlay-stats" id="overlay-stats" style="display: none;">
+        <div>
+            <span>Status:</span>
+            <span id="overlay-status">Idle</span>
+        </div>
+        <div>
+            <span>Duration:</span>
+            <span id="overlay-duration">00:00:00</span>
+        </div>
+        <div>
+            <span>File Size:</span>
+            <span id="overlay-filesize">0 MB</span>
+        </div>
+        <div>
+            <span>FPS:</span>
+            <span id="overlay-current-fps">0</span>
+        </div>
+    </div>
+</div>

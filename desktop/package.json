@@ -23,22 +23,6 @@
             "**/*",
             "!**/*.md",
             "!build"
-        ],
-        "extraResources": [
-            {
-                "from": "../games",
-                "to": "games",
-                "filter": [
-                    "**/*"
-                ]
-            },
-            {
-                "from": "../core",
-                "to": "core",
-                "filter": [
-                    "**/*"
-                ]
-            }
         ]
     },
     "dependencies": {

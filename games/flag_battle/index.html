@@ -20,6 +20,8 @@
 <body>
 
     <div id="game-area">
+        <video id="bg-video" loop muted playsinline
+            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;"></video>
         <div id="winner-bg"></div>
         <canvas id="particle-canvas"></canvas>
     </div>
@@ -48,8 +50,11 @@
 
     <div id="settings-btn" onclick="openSettings()">⚙️</div>
     <div id="stats-btn" onclick="openStats()">📊</div>
-    <div id="chat-toggle-btn" onclick="toggleChat()" title="Toggle Live Chat">📺</div>
-    <div id="stream-btn" onclick="toggleStream()" title="Start/Stop Stream" style="display:flex;">📡</div>
+    <div id="chat-toggle-btn" onclick="toggleChat()">💬</div>
+    <div id="stream-btn" onclick="toggleStreaming()">📡</div>
+
+    <!-- Backdrop for settings bottom sheet -->
+    <div id="settings-backdrop" onclick="closeSettings()"></div>
 
     <div id="settings-modal">
         <button class="modal-close-btn" onclick="closeSettings()" title="বন্ধ করুন">✕</button>
@@ -103,8 +108,41 @@
         </div>
 
         <div class="control-group">
+            <label>🖼️ ব্যাকগ্রাউন্ড টাইপ</label>
+            <select id="bg-type-select" onchange="changeBgType(this.value)" class="color-picker"
+                style="width: 100%; margin-top: 5px; height: 35px; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 0 10px;">
+                <option value="gradient">গ্র্যাডিয়েন্ট (ডিফল্ট)</option>
+                <option value="solid">সলিড কালার</option>
+                <option value="image">কাস্টম ছবি</option>
+                <option value="video">কাস্টম ভিডিও</option>
+            </select>
+        </div>
+
+        <div id="bg-image-control" class="control-group" style="display: none;">
+            <label class="file-upload">
+                📷 কাস্টম ছবি আপলোড
+                <input type="file" id="bg-image-input" accept="image/*" style="display: none;"
+                    onchange="handleBgImage(this)">
+            </label>
+        </div>
+
+        <div id="bg-video-control" class="control-group" style="display: none;">
+            <label class="file-upload">
+                🎥 কাস্টম ভিডিও আপলোড
+                <input type="file" id="bg-video-input" accept="video/*" style="display: none;"
+                    onchange="handleBgVideo(this)">
+            </label>
+        </div>
+
+        <div class="control-group">
             <label>🔴 এরিনা সাইজ: <span id="circle-val">44</span>%</label>
             <input type="range" id="circle-slider" min="30" max="60" step="1" value="44">
+        </div>
+
+        <div class="control-group">
+            <label>📸 YouTube প্রোফাইল সাইজ: <span id="profile-size-val">32</span></label>
+            <input type="range" id="profile-size-slider" min="32" max="512" step="32" value="32"
+                oninput="document.getElementById('profile-size-val').innerText = this.value">
         </div>
 
         <div class="control-group">
@@ -174,8 +212,8 @@
 
         <div class="control-group">
             <label class="checkbox-label">
-                <input type="checkbox" id="particles-toggle" checked>
-                <span>✨ পার্টিকেল ইফেক্ট</span>
+                <input type="checkbox" id="winner-profile-toggle" checked>
+                <span>👤 বিজয়ী প্লেয়ার প্রোফাইল ব্যাকগ্রাউন্ড</span>
             </label>
         </div>
 
@@ -188,27 +226,23 @@
 
         <div class="control-group">
             <label class="checkbox-label">
-                <input type="checkbox" id="rotation-toggle" checked>
-                <span>🔄 ফ্ল্যাগ রোটেশন (Rolling)</span>
+                <input type="checkbox" id="flag-border-toggle">
+                <span>🖼️ ফ্ল্যাগ বর্ডার</span>
             </label>
         </div>
 
         <div class="control-group">
             <label class="checkbox-label">
-                <input type="checkbox" id="flag-border-toggle" checked>
-                <span>🖼️ ফ্ল্যাগ বর্ডার</span>
+                <input type="checkbox" id="show-names-toggle" checked>
+                <span>📛 প্লেয়ার নাম দেখান</span>
             </label>
         </div>
 
-        <div class="control-group"
-            style="margin-top: 20px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 15px;">
-            <label style="display: block; margin-bottom: 8px;">📺 YouTube Live Chat</label>
-            <input type="text" id="yt-video-id" placeholder="Video ID (e.g., 4Ryov1ob2Hw)"
-                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; margin-bottom: 8px;">
-            <button id="connect-yt-btn"
-                style="width: 100%; padding: 10px; border-radius: 4px; border: none; background: #e74c3c; color: white; font-weight: bold; cursor: pointer;">
-                🔗 Connect to Live Chat
-            </button>
+        <div class="control-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="rotation-toggle" checked>
+                <span>🔄 ফ্ল্যাগ রোটেশন (Rolling)</span>
+            </label>
         </div>
 
         <div class="control-group">
@@ -233,16 +267,14 @@
         </div>
 
         <div class="control-group"
-            style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 15px; padding-top: 10px;">
-            <label>📡 স্ট্রিম বিটরেট: <span id="bitrate-val">4500</span> Kbps</label>
-            <input type="range" id="bitrate-slider" min="1000" max="8000" step="500" value="4500">
-            <p style="font-size: 10px; color: #888; margin-top: 5px;">(কম্পিউটার স্লো হলে বা বাফারিং হলে এটা কমান)</p>
-        </div>
-
-        <div class="control-group">
-            <label>🎬 স্ট্রিম FPS: <span id="fps-val">30</span> fps</label>
-            <input type="range" id="fps-slider" min="15" max="60" step="5" value="30">
-            <p style="font-size: 10px; color: #888; margin-top: 5px;">(বেশি FPS = স্মুথ ভিডিও কিন্তু বেশি লোড)</p>
+            style="margin-top: 20px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 15px;">
+            <label style="display: block; margin-bottom: 8px;">📺 YouTube Live Chat</label>
+            <input type="text" id="yt-video-id" placeholder="Video ID (e.g., 4Ryov1ob2Hw)"
+                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; margin-bottom: 8px;">
+            <button id="connect-yt-btn"
+                style="width: 100%; padding: 10px; border-radius: 4px; border: none; background: #e74c3c; color: white; font-weight: bold; cursor: pointer;">
+                🔗 Connect to Live Chat
+            </button>
         </div>
 
         <button class="reset-settings-btn" onclick="resetSettings()">🔄 ডিফল্ট সেটিংস রিস্টোর করুন</button>
@@ -1376,31 +1408,35 @@
 
             // Load saved bitrate
             const savedBitrate = localStorage.getItem('stream_bitrate');
-            if (savedBitrate) {
+            if (savedBitrate && bitrateSlider && bitrateVal) {
                 bitrateSlider.value = savedBitrate;
                 bitrateVal.innerText = savedBitrate;
             }
 
             // Load saved FPS
             const savedFPS = localStorage.getItem('stream_fps');
-            if (savedFPS) {
+            if (savedFPS && fpsSlider && fpsVal) {
                 fpsSlider.value = savedFPS;
                 fpsVal.innerText = savedFPS;
             }
 
             // Update on change - Bitrate
-            bitrateSlider.addEventListener('input', (e) => {
-                const val = e.target.value;
-                bitrateVal.innerText = val;
-                localStorage.setItem('stream_bitrate', val);
-            });
+            if (bitrateSlider && bitrateVal) {
+                bitrateSlider.addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    bitrateVal.innerText = val;
+                    localStorage.setItem('stream_bitrate', val);
+                });
+            }
 
             // Update on change - FPS
-            fpsSlider.addEventListener('input', (e) => {
-                const val = e.target.value;
-                fpsVal.innerText = val;
-                localStorage.setItem('stream_fps', val);
-            });
+            if (fpsSlider && fpsVal) {
+                fpsSlider.addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    fpsVal.innerText = val;
+                    localStorage.setItem('stream_fps', val);
+                });
+            }
 
             // Live Panel Sliders
             const liveBitrateSlider = document.getElementById('live-panel-bitrate');
