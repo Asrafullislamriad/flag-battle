@@ -139,6 +139,21 @@
             box-shadow: 0 8px 25px rgba(46, 204, 113, 0.5);
         }
 
+        /* Football Game Specifics */
+        .card.football .icon {
+            filter: drop-shadow(0 0 15px rgba(255, 152, 0, 0.4));
+        }
+
+        .card.football .btn {
+            background: #FF9800;
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .card.football:hover .btn {
+            box-shadow: 0 8px 25px rgba(255, 152, 0, 0.5);
+        }
+
         .tag {
             position: absolute;
             top: 15px;
@@ -163,6 +178,15 @@
             <div class="icon">🏁</div>
             <h2>Flag Battle</h2>
             <p>Interactive country battle royale. Connects with YouTube live chat for viewer participation.</p>
+            <div class="btn">Play Now</div>
+        </a>
+
+        <!-- Football Game Card -->
+        <a href="games/football_game/interactive-football.html" class="card football">
+            <span class="tag">New Game</span>
+            <div class="icon">⚽</div>
+            <h2>Football</h2>
+            <p>Interactive football field with physics. Comment to spawn as a player with your profile!</p>
             <div class="btn">Play Now</div>
         </a>
 
