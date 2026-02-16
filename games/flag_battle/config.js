@@ -129,7 +129,14 @@ function updateStats(country, won) {
 }
 
 function resetStats() {
-    if (confirm('সব স্ট্যাটিস্টিক্স মুছে ফেলবেন?')) {
+    if (typeof showConfirm === 'function') {
+        showConfirm('Reset Stats', 'সব স্ট্যাটিস্টিক্স মুছে ফেলবেন? এটি আর ফেরত আনা যাবে না।', () => {
+            gameStats = {};
+            saveStats();
+            renderStatsTable();
+            if (typeof showToast === 'function') showToast('Statistics reset successfully', 'success');
+        });
+    } else if (confirm('সব স্ট্যাটিস্টিক্স মুছে ফেলবেন?')) {
         gameStats = {};
         saveStats();
         renderStatsTable();

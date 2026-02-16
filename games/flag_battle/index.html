@@ -452,6 +452,67 @@
     <script src="game.js"></script>
     <script src="shortcuts.js"></script>
 
+    <!-- UI Components for OBS Compatibility -->
+    <div id="toast-container"></div>
+
+    <div id="custom-confirm-modal" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div id="modal-title" class="modal-title">Confirm Action</div>
+            <div id="modal-body" class="modal-body">Are you sure you want to proceed?</div>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="modal-btn cancel">Cancel</button>
+                <button id="modal-confirm" class="modal-btn confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Custom Dialog System (Replaces alert and confirm for OBS)
+        window.showToast = (message, type = 'info', duration = 3000) => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            if (type === 'warning') icon = '⚠️';
+
+            toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+
+            // Force reflow
+            toast.offsetHeight;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        };
+
+        window.showConfirm = (title, message, onConfirm) => {
+            const overlay = document.getElementById('custom-confirm-modal');
+            const titleEl = document.getElementById('modal-title');
+            const bodyEl = document.getElementById('modal-body');
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            titleEl.innerText = title;
+            bodyEl.innerText = message;
+            overlay.classList.add('active');
+
+            const close = () => {
+                overlay.classList.remove('active');
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+            };
+
+            confirmBtn.onclick = () => { close(); if (onConfirm) onConfirm(); };
+            cancelBtn.onclick = () => { close(); };
+        };
+    </script>
+
     <!-- Mobile Live Chat Integration (Hidden) -->
     <div id="live-chat-container"
         style="display: none; position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
@@ -472,7 +533,7 @@
         // This function loads the YouTube Live Chat in a hidden IFrame
         window.startYouTubeConnection = (videoId) => {
             if (!videoId) {
-                alert("Please provide a valid YouTube Video ID!");
+                showToast("Please provide a valid YouTube Video ID!", "warning");
                 return;
             }
 
@@ -485,7 +546,7 @@
                 localStorage.setItem('yt_video_id', videoId);
                 console.log("✅ Video ID saved:", videoId);
                 console.log("🎯 Running in Electron - chat handled by main process");
-                alert("✅ Live Chat Connected! (Electron Mode)");
+                showToast("Live Chat Connected! (Electron Mode)", "success");
 
                 // Send IPC message to Electron main process via electronAPI
                 if (window.electronAPI) {
@@ -512,7 +573,7 @@
                 startChatScraping(frame);
             }, 3000);
 
-            alert("✅ Live Chat Connected! (Hidden Mode)");
+            showToast("Live Chat Connected! (Hidden Mode)", "success");
         };
 
         // Chat scraping function (requires CORS disabled)

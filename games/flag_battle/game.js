@@ -615,7 +615,12 @@ function startNewRound() {
             // For Profile Pictures (External URLs), we need Anonymous access
             if (c.isProfile) {
                 img.crossOrigin = 'anonymous';
-                img.src = c.flagSrc;
+                let src = c.flagSrc;
+                // Arena flags use the configured profileSize (e.g., s32, s64) for performance
+                if (src && src.includes('yt3.ggpht.com')) {
+                    src = src.replace(/=s\d+-/, `=s${config.profileSize || 32}-`);
+                }
+                img.src = src;
             } else {
                 const filename = c.code === 'ad' ? 'andorra' : c.code;
                 img.src = `../assets/flags/${filename}.png`;
@@ -1271,7 +1276,8 @@ function handleWinner(winner) {
                 if (config.winnerProfileEnabled && winner.country.isProfile && winner.country.flagSrc) {
                     let highResUrl = winner.country.flagSrc;
                     if (highResUrl.includes('.ggpht.com')) {
-                        highResUrl = highResUrl.replace(/=s\d+-/, `=s${config.profileSize || 32}-`);
+                        // Winner Background always uses high-res s800
+                        highResUrl = highResUrl.replace(/=s\d+-/, `=s800-`);
                     }
                     winnerBg.style.backgroundImage = `url(${highResUrl})`;
                 } else {
@@ -1337,9 +1343,9 @@ function handleWinner(winner) {
             console.log('🔍 Original YouTube URL:', highQualityPic);
 
             if (highQualityPic && highQualityPic.includes('.ggpht.com')) {
-                // Replace s32, s48, s64, etc. with configured size
-                highQualityPic = highQualityPic.replace(/=s\d+-/, `=s${config.profileSize || 32}-`);
-                console.log(`📸 Upgraded to s${config.profileSize || 32}:`, highQualityPic);
+                // Winner image ALWAYS uses s800 regardless of arena setting
+                highQualityPic = highQualityPic.replace(/=s\d+-/, `=s800-`);
+                console.log(`📸 Winner upgraded to s800:`, highQualityPic);
             }
 
             // PRELOAD IMAGE BEFORE SHOWING
@@ -1459,8 +1465,9 @@ function handleWinner(winner) {
                         let avatarUrl = sup.user.pic || '';
 
                         // Upgrade YouTube profile pic to configured resolution for high quality
+                        // Supporter avatars use s128 for clear but efficient display
                         if (avatarUrl && avatarUrl.includes('yt3.ggpht.com')) {
-                            avatarUrl = avatarUrl.replace(/=s\d+-/, `=s${config.profileSize || 32}-`);
+                            avatarUrl = avatarUrl.replace(/=s\d+-/, `=s128-`);
                         }
 
                         const cleanName = String(sup.user.name).replace(/</g, "&lt;").replace(/>/g, "&gt;");
