@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Slider - Arcade Hub</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-bg: rgba(20, 20, 20, 0.8);
+            --accent-color: #3498db;
+            --text-color: #ffffff;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #slider-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: black;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            transition: opacity 1s ease-in-out, transform 1.5s ease-in-out;
+            transform: scale(1.05);
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #settings-panel {
+            position: relative;
+            z-index: 10;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 25px;
+            border-radius: 24px;
+            width: 450px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        }
+
+        #settings-panel.hidden {
+            transform: scale(0.8) translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 1.8rem;
+            text-align: center;
+            background: linear-gradient(135deg, #fff 0%, #3498db 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+            appearance: none;
+        }
+
+        select {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            border-color: var(--accent-color);
+        }
+
+        .gallery-container {
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            max-height: 200px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .gallery-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item.selected {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+
+        .gallery-item .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(52, 152, 219, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .gallery-item.selected .overlay {
+            opacity: 1;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        .gallery-item .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 5;
+            cursor: pointer;
+        }
+
+        .gallery-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .gallery-item .delete-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .btn-start {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(52, 152, 219, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-clear,
+        .btn-select-all {
+            background: transparent;
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: all 0.2s;
+        }
+
+        .btn-select-all {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            margin-right: 8px;
+        }
+
+        .btn-clear:hover {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-select-all:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .shortcut-hint {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        kbd {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ddd;
+            font-family: monospace;
+        }
+
+        #empty-state {
+            position: absolute;
+            z-index: 2;
+            color: #444;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <a href="../../index.html" class="back-link">← Back to Hub</a>
+
+    <div id="slider-container">
+        <div id="empty-state">No images uploaded yet</div>
+    </div>
+
+    <div id="settings-panel">
+        <h1>Photo Slider</h1>
+
+        <div class="form-group">
+            <label for="image-input">Upload New Images</label>
+            <input type="file" id="image-input" multiple accept="image/*">
+        </div>
+
+        <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Recent Gallery</label>
+                <div>
+                    <button class="btn-select-all" id="select-all-btn">Select All</button>
+                    <button class="btn-clear" id="clear-gallery">Clear All</button>
+                </div>
+            </div>
+            <div class="gallery-container" id="gallery-container">
+                <!-- Gallery items will be added here -->
+            </div>
+            <p style="font-size: 0.7rem; color: #666; margin-top: 5px;">Images are saved locally in your browser.</p>
+        </div>
+
+        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label for="fit-input">Fit Mode</label>
+                <select id="fit-input">
+                    <option value="contain">Contain</option>
+                    <option value="cover">Cover</option>
+                </select>
+            </div>
+            <div>
+                <label for="ratio-input">Aspect Ratio</label>
+                <select id="ratio-input">
+                    <option value="9/16" selected>9:16 (Portrait)</option>
+                    <option value="fullscreen">Fullscreen</option>
+                    <option value="16/9">16:9</option>
+                    <option value="4/3">4:3</option>
+                    <option value="1/1">1:1 (Square)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="interval-input">Interval (seconds)</label>
+            <input type="number" id="interval-input" value="3" min="0.5" step="0.5">
+        </div>
+
+        <button class="btn-start" id="start-btn">Start Slideshow</button>
+
+        <p class="shortcut-hint">Press <kbd>h</kbd> <kbd>h</kbd> (twice) to open settings</p>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('image-input');
+        const intervalInput = document.getElementById('interval-input');
+        const fitInput = document.getElementById('fit-input');
+        const ratioInput = document.getElementById('ratio-input');
+        const startBtn = document.getElementById('start-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const sliderContainer = document.getElementById('slider-container');
+        const galleryContainer = document.getElementById('gallery-container');
+        const clearGalleryBtn = document.getElementById('clear-gallery');
+        const selectAllBtn = document.getElementById('select-all-btn');
+        const emptyState = document.getElementById('empty-state');
+
+        let savedImages = [];
+        let selectedImages = [];
+        let currentLoopImages = [];
+        let currentIndex = -1;
+        let slideInterval = null;
+        let isRunning = false;
+
+        // IndexedDB Implementation
+        const DB_NAME = 'PhotoSliderDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'images';
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject('IndexedDB error: ' + e.target.errorCode);
+            });
+        }
+
+        function getAllImagesFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject('Failed to get images');
+            });
+        }
+
+        function addImageToDB(src) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.add({ src });
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject('Failed to add image');
+            });
+        }
+
+        function removeImageFromDB(id) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject('Failed to delete image');
+            });
+        }
+
+        function clearAllImagesFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject('Failed to clear images');
+            });
+        }
+
+        // Load settings and gallery on startup
+        async function loadSettings() {
+            try {
+                await initDB();
+                const imagesFromDB = await getAllImagesFromDB();
+                savedImages = imagesFromDB; // Array of {id, src}
+                renderGallery();
+            } catch (e) {
+                console.error('Settings load error', e);
+            }
+
+            const storedFit = localStorage.getItem('photoSliderFit');
+            if (storedFit) fitInput.value = storedFit;
+
+            const storedRatio = localStorage.getItem('photoSliderRatio');
+            if (storedRatio) ratioInput.value = storedRatio;
+
+            const storedInterval = localStorage.getItem('photoSliderInterval');
+            if (storedInterval) intervalInput.value = storedInterval;
+        }
+
+        function saveSimpleSettings() {
+            localStorage.setItem('photoSliderFit', fitInput.value);
+            localStorage.setItem('photoSliderRatio', ratioInput.value);
+            localStorage.setItem('photoSliderInterval', intervalInput.value);
+        }
+
+        function renderGallery() {
+            galleryContainer.innerHTML = '';
+            if (savedImages.length === 0) {
+                galleryContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #444; margin-top: 20px;">Gallery is empty</p>';
+            }
+            savedImages.forEach((imgObj) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item' + (selectedImages.includes(imgObj.src) ? ' selected' : '');
+
+                const deleteBtn = document.createElement('div');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = 'Delete image';
+                deleteBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (confirm('Delete this image?')) {
+                        await removeImageFromDB(imgObj.id);
+                        savedImages = await getAllImagesFromDB();
+                        const sIdx = selectedImages.indexOf(imgObj.src);
+                        if (sIdx !== -1) selectedImages.splice(sIdx, 1);
+                        renderGallery();
+                    }
+                };
+
+                item.innerHTML = `<img src="${imgObj.src}"><div class="overlay">✓</div>`;
+                item.appendChild(deleteBtn);
+                item.onclick = () => toggleImageSelection(imgObj.src, item);
+                galleryContainer.appendChild(item);
+            });
+        }
+
+        function toggleImageSelection(imgSrc, element) {
+            const idx = selectedImages.indexOf(imgSrc);
+            if (idx === -1) {
+                selectedImages.push(imgSrc);
+                element.classList.add('selected');
+            } else {
+                selectedImages.splice(idx, 1);
+                element.classList.remove('selected');
+            }
+        }
+
+        imageInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            galleryContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--accent-color); margin-top: 20px;">Processing...</p>';
+
+            for (const file of files) {
+                const reader = new FileReader();
+                const promise = new Promise(resolve => {
+                    reader.onload = async (event) => {
+                        const imgSrc = event.target.result;
+                        if (!savedImages.some(img => img.src === imgSrc)) {
+                            await addImageToDB(imgSrc);
+                        }
+                        resolve();
+                    };
+                });
+                reader.readAsDataURL(file);
+                await promise;
+            }
+
+            savedImages = await getAllImagesFromDB();
+            renderGallery();
+        });
+
+        clearGalleryBtn.onclick = async () => {
+            if (confirm('Are you sure you want to clear your recent gallery?')) {
+                await clearAllImagesFromDB();
+                savedImages = [];
+                selectedImages = [];
+                renderGallery();
+            }
+        };
+
+        selectAllBtn.onclick = () => {
+            if (selectedImages.length === savedImages.length) {
+                selectedImages = [];
+            } else {
+                selectedImages = savedImages.map(img => img.src);
+            }
+            renderGallery();
+        };
+
+        // "hh" detection
+        let lastHPress = 0;
+        const DOUBLE_PRESS_DELAY = 500;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'h') {
+                const now = Date.now();
+                if (now - lastHPress < DOUBLE_PRESS_DELAY) {
+                    toggleSettings(true);
+                    lastHPress = 0; // reset
+                } else {
+                    lastHPress = now;
+                }
+            }
+
+            if (e.key === 'Escape') {
+                toggleSettings(true);
+            }
+        });
+
+        function toggleSettings(show) {
+            if (show) {
+                settingsPanel.classList.remove('hidden');
+                stopSlideshow();
+                isRunning = false;
+            } else {
+                settingsPanel.classList.add('hidden');
+                isRunning = true;
+            }
+        }
+
+        function startSlideshow() {
+            // Apply Aspect Ratio
+            const ratio = ratioInput.value;
+            if (ratio === 'fullscreen') {
+                sliderContainer.style.width = '100%';
+                sliderContainer.style.height = '100%';
+                sliderContainer.style.left = '0';
+                sliderContainer.style.top = '0';
+                sliderContainer.style.transform = 'none';
+                sliderContainer.style.aspectRatio = 'auto';
+            } else {
+                sliderContainer.style.height = '95vh';
+                sliderContainer.style.width = 'auto';
+                sliderContainer.style.left = '50%';
+                sliderContainer.style.top = '50%';
+                sliderContainer.style.transform = 'translate(-50%, -50%)';
+                sliderContainer.style.aspectRatio = ratio;
+                sliderContainer.style.maxWidth = '95vw';
+                sliderContainer.style.maxHeight = '95vh';
+            }
+
+            if (selectedImages.length === 0 && savedImages.length > 0) {
+                currentLoopImages = savedImages.map(img => img.src);
+            } else if (selectedImages.length > 0) {
+                currentLoopImages = [...selectedImages];
+            } else {
+                alert('Please upload some images or select from gallery first!');
+                return;
+            }
+
+            const interval = parseFloat(intervalInput.value) * 1000;
+            if (isNaN(interval) || interval < 500) {
+                alert('Invalid interval. Minimum 0.5 seconds.');
+                return;
+            }
+
+            saveSimpleSettings();
+            toggleSettings(false);
+
+            sliderContainer.innerHTML = '';
+
+            const fitMode = fitInput.value;
+            currentLoopImages.forEach((src) => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.className = 'slide';
+                img.style.objectFit = fitMode;
+                sliderContainer.appendChild(img);
+            });
+
+            if (emptyState) emptyState.style.display = 'none';
+
+            currentIndex = 0;
+            showSlide(currentIndex);
+
+            slideInterval = setInterval(() => {
+                currentIndex = (currentIndex + 1) % currentLoopImages.length;
+                showSlide(currentIndex);
+            }, interval);
+        }
+
+        function stopSlideshow() {
+            if (slideInterval) {
+                clearInterval(slideInterval);
+                slideInterval = null;
+            }
+        }
+
+        function showSlide(index) {
+            const slides = sliderContainer.querySelectorAll('.slide');
+            slides.forEach(img => img.classList.remove('active'));
+            if (slides[index]) {
+                slides[index].classList.add('active');
+            }
+        }
+
+        startBtn.addEventListener('click', startSlideshow);
+
+        // Init
+        loadSettings();
+
+    </script>
+</body>
+
+</html>

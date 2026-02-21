@@ -39,6 +39,7 @@
             letter-spacing: 5px;
             background: linear-gradient(to right, #fff, #888);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
         }
@@ -154,6 +155,21 @@
             box-shadow: 0 8px 25px rgba(255, 152, 0, 0.5);
         }
 
+        /* Photo Slider Specifics */
+        .card.photo .icon {
+            filter: drop-shadow(0 0 15px rgba(52, 152, 219, 0.4));
+        }
+
+        .card.photo .btn {
+            background: #3498db;
+            color: white;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .card.photo:hover .btn {
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.5);
+        }
+
         .tag {
             position: absolute;
             top: 15px;
@@ -190,13 +206,31 @@
             <div class="btn">Play Now</div>
         </a>
 
-        <!-- Snake Game Card -->
+        <!-- Classic Snake Card -->
         <a href="games/snake_game/index.html" class="card snake">
             <span class="tag">Classic</span>
             <div class="icon">🐍</div>
-            <h2>Snake</h2>
+            <h2>Classic Snake</h2>
             <p>The retro classic. Eat apples, grow longer, and avoid hitting existing walls or yourself.</p>
             <div class="btn">Play Now</div>
+        </a>
+
+        <!-- Smart Snake Card -->
+        <a href="games/snake game 2/snake_game.html" class="card snake smart-snake">
+            <span class="tag">AI Enabled</span>
+            <div class="icon">🧠🐍</div>
+            <h2>Smart Snake</h2>
+            <p>Advanced AI-powered snake. Watch it survive or play yourself with ultra-fast speeds!</p>
+            <div class="btn">Play Now</div>
+        </a>
+
+        <!-- Photo Slider Card -->
+        <a href="games/photo-slider/index.html" class="card photo">
+            <span class="tag">Utility</span>
+            <div class="icon">🖼️</div>
+            <h2>Photo Slider</h2>
+            <p>Upload multiple photos and set a timer for an endless looping slideshow experience.</p>
+            <div class="btn">Start Slider</div>
         </a>
     </div>
 

@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balanced Smart Snake - ব্যালেন্সড স্মার্ট সাপ 🎯</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        canvas {
+            background-color: #aad751;
+            border: 15px solid #57606f;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 32px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #scoreBoard {
+            font-size: 22px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 8px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-auto {
+            padding: 10px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px #c0392b;
+            transition: all 0.2s;
+        }
+
+        .btn-auto:active {
+            box-shadow: 0 2px #c0392b;
+            transform: translateY(2px);
+        }
+
+        .btn-auto.active {
+            background-color: #2ed573;
+            box-shadow: 0 4px #26af61;
+        }
+
+        .btn-sound {
+            padding: 10px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #ffa502;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px #ff6348;
+            transition: all 0.2s;
+        }
+
+        .btn-sound:active {
+            box-shadow: 0 2px #ff6348;
+            transform: translateY(2px);
+        }
+
+        .btn-sound.muted {
+            background-color: #747d8c;
+            box-shadow: 0 4px #57606f;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .speed-control label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .speed-control input[type="range"] {
+            width: 120px;
+            cursor: pointer;
+        }
+
+        #speedValue {
+            min-width: 35px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .note {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .ai-status {
+            background: rgba(46, 204, 113, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #2ecc71;
+            border: 2px solid rgba(46, 204, 113, 0.5);
+            margin-bottom: 10px;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        #powerDisplay {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
+            padding: 8px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🐍 ব্যালেন্সড স্মার্ট সাপ 🎯</h1>
+
+    <div class="controls">
+        <div id="scoreBoard">🍎 স্কোর: 0</div>
+        <div id="powerDisplay">⚡ পাওয়ার: 0</div>
+        <button id="autoBtn" class="btn-auto" onclick="toggleAutoMode()">🤖 AI মোড: OFF</button>
+        <button id="soundBtn" class="btn-sound" onclick="toggleSound()">🔊 সাউন্ড: ON</button>
+        <div class="speed-control">
+            <label>⚡ স্পিড:</label>
+            <input type="range" id="speedSlider" min="5" max="200" value="80" step="5">
+            <span id="speedValue">সাধারণ</span>
+        </div>
+    </div>
+
+    <div class="ai-status" id="aiStatus" style="display: none;">
+        🧠 AI: Ready
+    </div>
+
+    <canvas id="gameCanvas" width="608" height="608"></canvas>
+    <div class="note">
+        ⌨️ Arrow Keys দিয়ে খেলুন | 🎯 ব্যালেন্সড AI - খায় + বাঁচে!<br>
+        🧠 স্মার্ট রিস্ক ম্যানেজমেন্ট | 🏆 পুরো বোর্ড দখল করতে পারে
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const box = 32;
+        const rows = 19;
+        const cols = 19;
+
+        let snake = [];
+        snake[0] = { x: 9 * box, y: 10 * box, px: 9 * box, py: 10 * box };
+
+        // Previous positions for interpolation
+        let prevSnake = [{ x: 9 * box, y: 10 * box }];
+
+        let food = {
+            x: Math.floor(Math.random() * 17 + 1) * box,
+            y: Math.floor(Math.random() * 15 + 3) * box
+        };
+
+        let score = 0;
+        let d;
+        let isAutoMode = false;
+        let game;
+        let gameSpeed = 80;
+        let isDead = false;
+        let isSoundEnabled = true;
+        let snakeSet = new Set(); // O(1) collision lookup
+        snakeSet.add(snake[0].x + ',' + snake[0].y);
+
+        // Animation variables
+        let blinkTimer = 0;
+        let isBlinking = false;
+        let tongueExtend = 0;
+        let tongueDirection = 1;
+        let deathAnimationFrame = 0;
+
+        // AI variables
+        let lastMoves = [];
+        let stuckCounter = 0;
+        let tailFollowCount = 0;
+
+        // Super Food & Jump Power variables
+        let superFood = null;
+        let superFoodSpawnTimer = 0;
+        let superFoodLifeTimer = 0;
+        let jumpPowers = 0;
+        let isJumping = false;
+        let jumpFlashTimer = 0;
+        let superFoodPulse = 0;
+        let frameCount = 0;
+        let nextSuperFoodSpawn = 0; // pre-calculated spawn threshold
+        const SUPER_FOOD_SPAWN_INTERVAL_MIN = 15;
+        const SUPER_FOOD_SPAWN_INTERVAL_MAX = 25;
+        const SUPER_FOOD_LIFE_DURATION = 5;
+        const MAX_JUMP_POWERS = 3;
+
+        function resetSuperFoodTimer() {
+            nextSuperFoodSpawn = Math.floor(
+                (SUPER_FOOD_SPAWN_INTERVAL_MIN + Math.random() * (SUPER_FOOD_SPAWN_INTERVAL_MAX - SUPER_FOOD_SPAWN_INTERVAL_MIN)) * (1000 / gameSpeed)
+            );
+            superFoodSpawnTimer = 0;
+        }
+        resetSuperFoodTimer();
+
+        // ============ SOUND SYSTEM ============
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playEatSound() {
+            if (!isSoundEnabled) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+        }
+
+        function playGameOverSound() {
+            if (!isSoundEnabled) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+
+            setTimeout(() => {
+                const crashOsc = audioContext.createOscillator();
+                const crashGain = audioContext.createGain();
+
+                crashOsc.connect(crashGain);
+                crashGain.connect(audioContext.destination);
+
+                crashOsc.type = 'square';
+                crashOsc.frequency.setValueAtTime(150, audioContext.currentTime);
+
+                crashGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                crashGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+                crashOsc.start(audioContext.currentTime);
+                crashOsc.stop(audioContext.currentTime + 0.3);
+            }, 100);
+        }
+
+        function playMoveSound() {
+            if (!isSoundEnabled) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+
+            gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.05);
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const btn = document.getElementById("soundBtn");
+            if (isSoundEnabled) {
+                btn.innerText = "🔊 সাউন্ড: ON";
+                btn.classList.remove("muted");
+            } else {
+                btn.innerText = "🔇 সাউন্ড: OFF";
+                btn.classList.add("muted");
+            }
+        }
+
+        const speedSlider = document.getElementById("speedSlider");
+        const speedValue = document.getElementById("speedValue");
+
+        speedSlider.addEventListener("input", function () {
+            gameSpeed = parseInt(this.value);
+            let speedText = "সাধারণ";
+            if (gameSpeed <= 10) speedText = "গড মোড ⚡⚡⚡";
+            else if (gameSpeed <= 30) speedText = "অতি দ্রুত 🚀🚀🚀";
+            else if (gameSpeed <= 50) speedText = "খুব দ্রুত 🚀🚀";
+            else if (gameSpeed <= 70) speedText = "দ্রুত 🚀";
+            else if (gameSpeed <= 100) speedText = "স্বাভাবিক ⚡";
+            else if (gameSpeed <= 140) speedText = "মাঝারি 🐢";
+            else speedText = "ধীর 🐌";
+
+            speedValue.textContent = speedText;
+
+            if (game) {
+                // Just update gameSpeed; requestAnimationFrame uses it automatically
+                resetSuperFoodTimer();
+            }
+        });
+
+        document.addEventListener("keydown", direction);
+
+        function direction(event) {
+            if (isAutoMode || isDead) return;
+
+            let key = event.keyCode;
+            let newDir = null;
+
+            if (key == 37 && d != "RIGHT") { newDir = "LEFT"; }
+            else if (key == 38 && d != "DOWN") { newDir = "UP"; }
+            else if (key == 39 && d != "LEFT") { newDir = "RIGHT"; }
+            else if (key == 40 && d != "UP") { newDir = "DOWN"; }
+
+            if (newDir && newDir != d) {
+                d = newDir;
+                playMoveSound();
+            }
+        }
+
+        function toggleAutoMode() {
+            isAutoMode = !isAutoMode;
+            const btn = document.getElementById("autoBtn");
+            const aiStatus = document.getElementById("aiStatus");
+
+            if (isAutoMode) {
+                btn.innerText = "🤖 AI মোড: ON";
+                btn.classList.add("active");
+                aiStatus.style.display = "block";
+                lastMoves = [];
+                stuckCounter = 0;
+            } else {
+                btn.innerText = "🤖 AI মোড: OFF";
+                btn.classList.remove("active");
+                aiStatus.style.display = "none";
+            }
+        }
+
+        function collision(head, array) {
+            for (let i = 0; i < array.length; i++) {
+                if (head.x == array[i].x && head.y == array[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ============ BALANCED SMART AI ============
+
+        function isValidPosition(pos, snakeArray) {
+            if (pos.x < 0 || pos.x >= 19 * box || pos.y < 0 || pos.y >= 19 * box) return false;
+            // Use Set for fast lookup when checking against main snake
+            if (snakeArray === snake) {
+                return !snakeSet.has(pos.x + ',' + pos.y);
+            }
+            for (let i = 0; i < snakeArray.length; i++) {
+                if (pos.x == snakeArray[i].x && pos.y == snakeArray[i].y) return false;
+            }
+            return true;
+        }
+
+        // Flood fill - accessible space counting (DYNAMIC)
+        function countAccessibleSpace(startPos, simulatedSnake) {
+            let visited = new Set();
+            let queue = [startPos];
+            visited.add(startPos.x + "," + startPos.y);
+            let count = 0;
+
+            // 🔥 DYNAMIC maxCount based on snake length
+            let snakeLength = snake.length;
+            let maxCount;
+
+            if (snakeLength < 50) {
+                maxCount = 100;
+            } else if (snakeLength < 100) {
+                maxCount = 150;
+            } else if (snakeLength < 200) {
+                maxCount = 200;
+            } else {
+                maxCount = 250;
+            }
+
+            while (queue.length > 0 && count < maxCount) {
+                let pos = queue.shift();
+                count++;
+
+                let neighbors = [
+                    { x: pos.x - box, y: pos.y },
+                    { x: pos.x + box, y: pos.y },
+                    { x: pos.x, y: pos.y - box },
+                    { x: pos.x, y: pos.y + box }
+                ];
+
+                for (let next of neighbors) {
+                    let key = next.x + "," + next.y;
+                    if (!visited.has(key) && isValidPosition(next, simulatedSnake)) {
+                        visited.add(key);
+                        queue.push(next);
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        // BFS Pathfinding — optimized with parent map instead of path copies
+        function findPath(start, target, simulatedSnake) {
+            let visited = new Set();
+            let queue = [start];
+            let parent = new Map();
+            let startKey = start.x + ',' + start.y;
+            visited.add(startKey);
+
+            while (queue.length > 0) {
+                let current = queue.shift();
+
+                if (current.x === target.x && current.y === target.y) {
+                    // Reconstruct path
+                    let path = [current];
+                    let key = current.x + ',' + current.y;
+                    while (parent.has(key)) {
+                        current = parent.get(key);
+                        path.unshift(current);
+                        key = current.x + ',' + current.y;
+                    }
+                    return path;
+                }
+
+                let neighbors = [
+                    { x: current.x - box, y: current.y },
+                    { x: current.x + box, y: current.y },
+                    { x: current.x, y: current.y - box },
+                    { x: current.x, y: current.y + box }
+                ];
+
+                for (let next of neighbors) {
+                    let key = next.x + ',' + next.y;
+                    if (!visited.has(key) && isValidPosition(next, simulatedSnake)) {
+                        visited.add(key);
+                        parent.set(key, current);
+                        queue.push(next);
+                    }
+                }
+            }
+            return null;
+        }
+
+        // 🎯 TAIL REACHABILITY CHECK
+        function isTailReachable(head, currentSnake) {
+            // সাপের লেজ হলো শেষ সেগমেন্ট।
+            let tail = currentSnake[currentSnake.length - 1];
+            // লেজ ছাড়া সাপের বডি যাতে পথ খোঁজা যায়
+            let snakeWithoutTail = currentSnake.slice(0, -1);
+            return !!findPath(head, tail, snakeWithoutTail);
+        }
+
+        // 🎯 UNIFIED AI - একটাই নিয়ম: প্রতিটি মুভে বের হওয়ার রাস্তা রাখো
+        function getAutoMove() {
+            let aiStatus = document.getElementById("aiStatus");
+            let head = snake[0];
+
+            // সব সম্ভাব্য মুভ বের করো
+            let allMoves = [
+                { dir: "LEFT", x: head.x - box, y: head.y },
+                { dir: "RIGHT", x: head.x + box, y: head.y },
+                { dir: "UP", x: head.x, y: head.y - box },
+                { dir: "DOWN", x: head.x, y: head.y + box }
+            ].filter(move => !isOpposite(move.dir) && isValidPosition(move, snake));
+
+            if (allMoves.length === 0) return d;
+
+            // প্রতিটি মুভের জন্য: স্পেস, tail reachability, ফুডের দূরত্ব
+            let evaluatedMoves = allMoves.map(move => {
+                let simSnake = [move, ...snake.slice(0, -1)];
+                let space = countAccessibleSpace(move, simSnake);
+                let canReachTail = isTailReachable(move, simSnake);
+                let distToFood = Math.abs(move.x - food.x) + Math.abs(move.y - food.y);
+
+                return {
+                    dir: move.dir,
+                    pos: move,
+                    space: space,
+                    safe: canReachTail,
+                    distToFood: distToFood
+                };
+            });
+
+            // নিরাপদ মুভগুলো আলাদা করো
+            let safeMoves = evaluatedMoves.filter(m => m.safe);
+
+            // কোনো safe move না থাকলে সবচেয়ে বেশি স্পেসওয়ালা নাও
+            if (safeMoves.length === 0) {
+                evaluatedMoves.sort((a, b) => b.space - a.space);
+                aiStatus.textContent = "⚠️ AI: No safe exit!";
+                return evaluatedMoves[0].dir;
+            }
+
+            // ===== SUPER FOOD CHECK (highest priority) =====
+            if (superFood && jumpPowers < MAX_JUMP_POWERS) {
+                let sfPath = findPath(head, superFood, snake);
+                if (sfPath && sfPath.length > 1) {
+                    let sfNext = sfPath[1];
+                    let sfDir = "";
+                    if (sfNext.x < head.x) sfDir = "LEFT";
+                    else if (sfNext.x > head.x) sfDir = "RIGHT";
+                    else if (sfNext.y < head.y) sfDir = "UP";
+                    else if (sfNext.y > head.y) sfDir = "DOWN";
+
+                    let sfMove = evaluatedMoves.find(m => m.dir === sfDir);
+                    if (sfMove && sfMove.safe) {
+                        aiStatus.textContent = "⭐ AI: Going for SUPER FOOD!";
+                        return sfDir;
+                    }
+                }
+            }
+
+            // ===== FOOD CHECK =====
+            let foodPath = findPath(head, food, snake);
+            if (foodPath && foodPath.length > 1) {
+                let futureSnake = [food, ...snake];
+                let afterEatTailReachable = isTailReachable(food, futureSnake);
+                let afterEatSpace = countAccessibleSpace(food, futureSnake);
+
+                if (afterEatTailReachable && afterEatSpace > snake.length) {
+                    let nextStep = foodPath[1];
+                    let foodDir = "";
+                    if (nextStep.x < head.x) foodDir = "LEFT";
+                    else if (nextStep.x > head.x) foodDir = "RIGHT";
+                    else if (nextStep.y < head.y) foodDir = "UP";
+                    else if (nextStep.y > head.y) foodDir = "DOWN";
+
+                    let foodMove = evaluatedMoves.find(m => m.dir === foodDir);
+                    if (foodMove && foodMove.safe) {
+                        aiStatus.textContent = "🍎 AI: Going for food!";
+                        return foodDir;
+                    }
+                }
+            }
+
+            // ===== PATROL: safe মুভের মধ্যে food/super food-এর দিকে যাও =====
+            let targetX = food.x, targetY = food.y;
+            if (superFood && jumpPowers < MAX_JUMP_POWERS) {
+                let distToSF = Math.abs(head.x - superFood.x) + Math.abs(head.y - superFood.y);
+                let distToFood = Math.abs(head.x - food.x) + Math.abs(head.y - food.y);
+                if (distToSF < distToFood) {
+                    targetX = superFood.x;
+                    targetY = superFood.y;
+                }
+            }
+
+            safeMoves.sort((a, b) => {
+                let distA = Math.abs(a.pos.x - targetX) + Math.abs(a.pos.y - targetY);
+                let distB = Math.abs(b.pos.x - targetX) + Math.abs(b.pos.y - targetY);
+                let scoreA = -distA * 10 + a.space;
+                let scoreB = -distB * 10 + b.space;
+                return scoreB - scoreA;
+            });
+
+            aiStatus.textContent = "🛡️ AI: Safe patrol → food";
+            return safeMoves[0].dir;
+        }
+
+        function isOpposite(newDir) {
+            if (d == "LEFT" && newDir == "RIGHT") return true;
+            if (d == "RIGHT" && newDir == "LEFT") return true;
+            if (d == "UP" && newDir == "DOWN") return true;
+            if (d == "DOWN" && newDir == "UP") return true;
+            return false;
+        }
+
+        // 🐍 GOOGLE SNAKE STYLE DRAWING
+        const BODY_WIDTH = box * 0.75; // tube thickness
+        const HEAD_SIZE = box * 0.9;   // head is slightly bigger
+
+        function getSegmentDir(from, to) {
+            if (to.x > from.x) return 'RIGHT';
+            if (to.x < from.x) return 'LEFT';
+            if (to.y > from.y) return 'DOWN';
+            return 'UP';
+        }
+
+        function drawSnakeBody(alpha) {
+            if (snake.length === 0) return;
+            // alpha: 0 = just ticked, 1 = about to tick next
+            // lerp each segment between prevSnake and snake positions
+            let pts = snake.map((seg, i) => {
+                let prev = prevSnake[i] || seg;
+                return {
+                    x: prev.x + (seg.x - prev.x) * alpha,
+                    y: prev.y + (seg.y - prev.y) * alpha
+                };
+            });
+
+            // === Draw body: overlapping circles (back→front) — clean corners, no diagonal artifacts ===
+            for (let i = pts.length - 1; i >= 0; i--) {
+                let cx = pts[i].x + box / 2;
+                let cy = pts[i].y + box / 2;
+
+                // 🔥 TAPER: মাথায় মোটা, লেজে চিকন
+                // r must be > box/2 so adjacent circles overlap and fill gaps/corners
+                let ratio = 1 - (i / Math.max(snake.length - 1, 1));
+                let r;
+                if (i === 0) {
+                    r = HEAD_SIZE / 2;
+                } else {
+                    r = box * (0.35 + ratio * 0.17); // tail≈0.35, neck≈0.52
+                }
+
+                // 🎨 GRADIENT: bright at head, dark at tail
+                let hue = 217;
+                let sat = 90;
+                let light = Math.floor(25 + ratio * 40);
+
+                ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Jump flash effect
+                if (jumpFlashTimer > 0 && i < 3) {
+                    ctx.fillStyle = `rgba(255, 215, 0, ${jumpFlashTimer / 10})`;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r + 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+
+            // === Draw head details ===
+            let hx = pts[0].x + box / 2;
+            let hy = pts[0].y + box / 2;
+            let headDir = d || 'RIGHT';
+
+            // Determine eye positions based on direction
+            let eye1x, eye1y, eye2x, eye2y;
+            let eyeR = 5, pupilR = 2.5;
+
+            if (headDir === 'RIGHT') {
+                eye1x = hx + 6; eye1y = hy - 6;
+                eye2x = hx + 6; eye2y = hy + 6;
+            } else if (headDir === 'LEFT') {
+                eye1x = hx - 6; eye1y = hy - 6;
+                eye2x = hx - 6; eye2y = hy + 6;
+            } else if (headDir === 'UP') {
+                eye1x = hx - 6; eye1y = hy - 6;
+                eye2x = hx + 6; eye2y = hy - 6;
+            } else {
+                eye1x = hx - 6; eye1y = hy + 6;
+                eye2x = hx + 6; eye2y = hy + 6;
+            }
+
+            if (isDead) {
+                // Dead eyes: X marks
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                [{ x: eye1x, y: eye1y }, { x: eye2x, y: eye2y }].forEach(e => {
+                    ctx.beginPath();
+                    ctx.moveTo(e.x - 3, e.y - 3); ctx.lineTo(e.x + 3, e.y + 3);
+                    ctx.moveTo(e.x + 3, e.y - 3); ctx.lineTo(e.x - 3, e.y + 3);
+                    ctx.stroke();
+                });
+            } else {
+                // White eye circles
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(eye1x, eye1y, eyeR, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(eye2x, eye2y, eyeR, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Black pupils (slightly offset in direction)
+                let pOffX = 0, pOffY = 0;
+                if (headDir === 'RIGHT') pOffX = 1.5;
+                else if (headDir === 'LEFT') pOffX = -1.5;
+                else if (headDir === 'UP') pOffY = -1.5;
+                else pOffY = 1.5;
+
+                ctx.fillStyle = '#1a1a2e';
+                ctx.beginPath();
+                ctx.arc(eye1x + pOffX, eye1y + pOffY, pupilR, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(eye2x + pOffX, eye2y + pOffY, pupilR, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Blinking
+                if (isBlinking) {
+                    let headHue = isAutoMode ? 217 : 217;
+                    ctx.fillStyle = `hsl(${headHue}, 90%, 65%)`;
+                    ctx.beginPath();
+                    ctx.arc(eye1x, eye1y, eyeR, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(eye2x, eye2y, eyeR, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Split draw() into update() (logic) and render(alpha) (visuals)
+        function render(alpha) {
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    ctx.fillStyle = ((i + j) % 2 == 0) ? "#aad751" : "#a2d149";
+                    ctx.fillRect(i * box, j * box, box, box);
+                }
+            }
+
+            blinkTimer++;
+            if (blinkTimer > 60) {
+                isBlinking = true;
+                if (blinkTimer > 65) {
+                    isBlinking = false;
+                    blinkTimer = 0;
+                }
+            }
+
+            tongueExtend += tongueDirection * 0.5;
+            if (tongueExtend > 4 || tongueExtend < 0) {
+                tongueDirection *= -1;
+            }
+
+            // 🐍 Draw snake (Google style) with interpolation
+            drawSnakeBody(alpha);
+
+            // 🍎 Regular food (floating)
+            frameCount++;
+            superFoodPulse = Math.sin(frameCount * 0.15) * 0.3 + 0.7;
+
+            // Floating offsets
+            let foodBob = Math.sin(frameCount * 0.08) * 4;
+            let foodShadowAlpha = 0.18 + Math.sin(frameCount * 0.08 + Math.PI) * 0.08;
+
+            let fcx = food.x + box / 2;
+            let fcy = food.y + box / 2;
+
+            // Oval shadow
+            ctx.save();
+            ctx.scale(1, 0.4);
+            ctx.fillStyle = `rgba(0,0,0,${foodShadowAlpha})`;
+            ctx.beginPath();
+            ctx.arc(fcx, (fcy + box * 0.45) / 0.4, box / 3.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.restore();
+
+            // 🍎 Realistic Apple (floating)
+            {
+                let r = box / 2.2;
+                let ax = fcx;
+                let ay = fcy + foodBob;
+
+                // Oval ground shadow
+                ctx.save();
+                ctx.scale(1, 0.35);
+                ctx.fillStyle = `rgba(0,0,0,${foodShadowAlpha + 0.1})`;
+                ctx.beginPath();
+                ctx.arc(ax, (fcy + box * 0.48) / 0.35, r * 0.7, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.restore();
+
+                // Apple body — radial gradient: bright top-left highlight → deep red
+                let appleGrad = ctx.createRadialGradient(ax - r * 0.3, ay - r * 0.3, r * 0.1, ax, ay, r);
+                appleGrad.addColorStop(0, '#ff6b6b');   // bright highlight
+                appleGrad.addColorStop(0.4, '#e74c3c'); // mid red
+                appleGrad.addColorStop(1, '#8B0000');   // deep shadow edge
+                ctx.fillStyle = appleGrad;
+                ctx.beginPath();
+                ctx.arc(ax, ay, r, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Shine / specular highlight
+                let shineGrad = ctx.createRadialGradient(ax - r * 0.35, ay - r * 0.35, 0, ax - r * 0.2, ay - r * 0.2, r * 0.45);
+                shineGrad.addColorStop(0, 'rgba(255,255,255,0.55)');
+                shineGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = shineGrad;
+                ctx.beginPath();
+                ctx.arc(ax, ay, r, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Stem (brown, slightly curved)
+                ctx.strokeStyle = '#5D3A1A';
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(ax, ay - r + 1);
+                ctx.quadraticCurveTo(ax + 5, ay - r - 7, ax + 3, ay - r - 11);
+                ctx.stroke();
+
+                // Leaf
+                let leafGrad = ctx.createLinearGradient(ax + 1, ay - r - 10, ax + 11, ay - r - 3);
+                leafGrad.addColorStop(0, '#27ae60');
+                leafGrad.addColorStop(1, '#1a7a43');
+                ctx.fillStyle = leafGrad;
+                ctx.beginPath();
+                ctx.moveTo(ax + 3, ay - r - 9);
+                ctx.quadraticCurveTo(ax + 13, ay - r - 14, ax + 11, ay - r - 3);
+                ctx.quadraticCurveTo(ax + 2, ay - r - 4, ax + 3, ay - r - 9);
+                ctx.fill();
+                ctx.strokeStyle = '#1a7a43';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+            }
+
+
+            // Super food spawn timer
+            if (!superFood && !isDead) {
+                superFoodSpawnTimer++;
+                if (superFoodSpawnTimer >= nextSuperFoodSpawn) {
+                    // Spawn super food at random empty position
+                    let sfPos;
+                    let attempts = 0;
+                    do {
+                        sfPos = {
+                            x: Math.floor(Math.random() * 17 + 1) * box,
+                            y: Math.floor(Math.random() * 15 + 3) * box
+                        };
+                        attempts++;
+                    } while ((collision(sfPos, snake) || (sfPos.x === food.x && sfPos.y === food.y)) && attempts < 100);
+                    if (attempts < 100) {
+                        superFood = sfPos;
+                        superFoodLifeTimer = 0;
+                    }
+                    resetSuperFoodTimer();
+                }
+            }
+
+            // Super food life timer & despawn
+            if (superFood) {
+                // lifeFrames: speed-dependent (slow = longer, fast = shorter)
+                // gameSpeed ms/tick → ticks/sec = 1000/gameSpeed
+                // duration in seconds: clamp(gameSpeed/15, 3, 15)
+                let lifeSec = Math.max(3, Math.min(15, gameSpeed / 15));
+                let lifeFrames = Math.round(lifeSec * (1000 / gameSpeed));
+                if (superFoodLifeTimer >= lifeFrames) {
+                    superFood = null; // Despawn
+                } else {
+                    // Draw golden pulsing star (floating)
+                    let sfx = superFood.x + box / 2;
+                    let sfBase = superFood.y + box / 2;
+                    let sfBob = Math.sin(frameCount * 0.1 + 1.5) * 4; // float offset, different phase
+                    let sfShadowA = 0.15 + Math.sin(frameCount * 0.1 + 1.5 + Math.PI) * 0.07;
+                    let sfy = sfBase + sfBob;
+                    let sfRadius = (box / 2) * superFoodPulse;
+
+                    // Oval shadow
+                    ctx.save();
+                    ctx.scale(1, 0.4);
+                    ctx.fillStyle = `rgba(180,130,0,${sfShadowA})`;
+                    ctx.beginPath();
+                    ctx.arc(sfx, (sfBase + box * 0.45) / 0.4, box / 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+
+                    // ⭐ Super food: dark circular backdrop so star is visible
+                    ctx.fillStyle = 'rgba(20, 10, 0, 0.55)';
+                    ctx.beginPath();
+                    ctx.arc(sfx, sfy, box / 2 - 2, 0, 2 * Math.PI);
+                    ctx.fill();
+
+                    // Outer ring accent
+                    ctx.strokeStyle = 'rgba(255, 200, 0, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(sfx, sfy, box / 2 - 3, 0, 2 * Math.PI);
+                    ctx.stroke();
+
+                    // Glow
+                    ctx.shadowColor = '#f1c40f';
+                    ctx.shadowBlur = 18;
+
+                    // Star shape
+                    ctx.fillStyle = '#FFD700';
+                    ctx.beginPath();
+                    for (let s = 0; s < 5; s++) {
+                        let outerAngle = (s * 4 * Math.PI / 5) - Math.PI / 2;
+                        let innerAngle = outerAngle + Math.PI / 5;
+                        ctx.lineTo(sfx + Math.cos(outerAngle) * sfRadius, sfy + Math.sin(outerAngle) * sfRadius);
+                        ctx.lineTo(sfx + Math.cos(innerAngle) * sfRadius * 0.42, sfy + Math.sin(innerAngle) * sfRadius * 0.42);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Inner shimmer
+                    ctx.fillStyle = '#fffbe6';
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath();
+                    ctx.arc(sfx - sfRadius * 0.18, sfy - sfRadius * 0.18, sfRadius * 0.22, 0, 2 * Math.PI);
+                    ctx.fill();
+
+                    ctx.shadowBlur = 0;
+                    ctx.lineWidth = 1;
+
+                    // Timer bar
+                    let lifeSec2 = Math.max(3, Math.min(15, gameSpeed / 15));
+                    let lifeFrames2 = Math.round(lifeSec2 * (1000 / gameSpeed));
+                    let timeLeft = 1 - (superFoodLifeTimer / lifeFrames2);
+                    ctx.fillStyle = timeLeft > 0.3 ? '#2ecc71' : '#e74c3c';
+                    ctx.fillRect(superFood.x + 2, superFood.y + box - 4, (box - 4) * timeLeft, 3);
+                }
+            }
+
+            // Jump flash countdown
+            if (jumpFlashTimer > 0) jumpFlashTimer--;
+        } // end render()
+
+        function draw() {  // Game logic tick
+            // Save previous positions for smooth interpolation
+            prevSnake = snake.map(s => ({ x: s.x, y: s.y }));
+
+            // Tick super food life timer here (game ticks, not render frames)
+            if (superFood) superFoodLifeTimer++;
+
+
+            if (isDead) {
+                deathAnimationFrame++;
+
+                // 3 সেকেন্ড = 3000ms / gameSpeed = frames needed
+                // gameSpeed 80ms হলে: 3000/80 = 37.5 frames ≈ 38 frames
+                let totalFrames = Math.ceil(3000 / gameSpeed);
+                let countdown = Math.ceil((totalFrames - deathAnimationFrame) / (totalFrames / 3));
+
+                if (countdown > 0) {
+                    // কাউন্টডাউন টেক্সট দেখানো
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 48px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText("💀 Game Over!", canvas.width / 2, canvas.height / 2 - 60);
+
+                    ctx.font = "32px Arial";
+                    ctx.fillText(`স্কোর: ${score}`, canvas.width / 2, canvas.height / 2 - 10);
+
+                    ctx.font = "bold 64px Arial";
+                    ctx.fillStyle = "#f1c40f";
+                    ctx.fillText(countdown, canvas.width / 2, canvas.height / 2 + 60);
+
+                    ctx.font = "20px Arial";
+                    ctx.fillStyle = "white";
+                    ctx.fillText("Restarting...", canvas.width / 2, canvas.height / 2 + 100);
+                }
+
+                if (deathAnimationFrame >= totalFrames) {
+                    isDead = false;
+                    deathAnimationFrame = 0;
+                    snake = [{ x: 9 * box, y: 10 * box }];
+                    prevSnake = [{ x: 9 * box, y: 10 * box }];
+                    score = 0;
+                    d = null;
+                    lastMoves = [];
+                    stuckCounter = 0;
+                    jumpPowers = 0;
+                    superFood = null;
+                    resetSuperFoodTimer();
+                    snakeSet.clear();
+                    snakeSet.add(snake[0].x + ',' + snake[0].y);
+                    document.getElementById("scoreBoard").innerText = "🍎 স্কোর: 0";
+                    document.getElementById("powerDisplay").innerText = "⚡ পাওয়ার: 0";
+                }
+                return;
+            }
+
+            if (isAutoMode) {
+                let aiMove = getAutoMove();
+                if (aiMove) d = aiMove;
+            }
+
+            let snakeX = snake[0].x;
+            let snakeY = snake[0].y;
+
+            if (d == "LEFT") snakeX -= box;
+            if (d == "UP") snakeY -= box;
+            if (d == "RIGHT") snakeX += box;
+            if (d == "DOWN") snakeY += box;
+
+            if (snakeX == food.x && snakeY == food.y) {
+                score++;
+                playEatSound();
+                document.getElementById("scoreBoard").innerText = "🍎 স্কোর: " + score;
+                food = {
+                    x: Math.floor(Math.random() * 17 + 1) * box,
+                    y: Math.floor(Math.random() * 15 + 3) * box
+                };
+                while (collision(food, snake)) {
+                    food = {
+                        x: Math.floor(Math.random() * 17 + 1) * box,
+                        y: Math.floor(Math.random() * 15 + 3) * box
+                    };
+                }
+            } else if (superFood && snakeX == superFood.x && snakeY == superFood.y) {
+                // ⭐ SUPER FOOD eaten!
+                if (jumpPowers < MAX_JUMP_POWERS) {
+                    jumpPowers++;
+                    document.getElementById("powerDisplay").innerText = "⚡ পাওয়ার: " + jumpPowers;
+                }
+                superFood = null;
+                resetSuperFoodTimer();
+                playEatSound();
+                score += 3; // Bonus score
+                document.getElementById("scoreBoard").innerText = "🍎 স্কোর: " + score;
+                snake.pop(); // Normal move, no growth from super food
+            } else {
+                snake.pop();
+            }
+
+            let newHead = { x: snakeX, y: snakeY };
+
+            // Wall collision = always die
+            if (snakeX < 0 || snakeX >= 19 * box || snakeY < 0 || snakeY >= 19 * box) {
+                isDead = true;
+                playGameOverSound();
+                return;
+            }
+
+            // Body collision = use jump power if available
+            if (collision(newHead, snake)) {
+                if (jumpPowers > 0) {
+                    // ⚡ JUMP! Pass through body
+                    jumpPowers--;
+                    jumpFlashTimer = 10;
+                    isJumping = true;
+                    document.getElementById("powerDisplay").innerText = "⚡ পাওয়ার: " + jumpPowers;
+                    let aiStatus = document.getElementById("aiStatus");
+                    aiStatus.textContent = "⚡ JUMP USED! Powers: " + jumpPowers;
+                } else {
+                    isDead = true;
+                    playGameOverSound();
+                    return;
+                }
+            } else {
+                isJumping = false;
+            }
+
+            // Update snakeSet after adding new head
+            snakeSet.clear();
+            for (let s of snake) snakeSet.add(s.x + ',' + s.y);
+            snake.unshift(newHead);
+            snakeSet.add(newHead.x + ',' + newHead.y);
+        }
+
+        // requestAnimationFrame loop: render every frame at 60fps, tick logic at gameSpeed
+        let lastFrameTime = 0;
+        let lastTickTime = 0;
+        function gameLoop(timestamp) {
+            if (!lastFrameTime) { lastFrameTime = timestamp; lastTickTime = timestamp; }
+
+            // Calculate interpolation alpha (0=just ticked, 1=about to tick)
+            let elapsed = timestamp - lastTickTime;
+            let alpha = Math.min(elapsed / gameSpeed, 1);
+
+            // Render every frame with interpolation
+            render(alpha);
+
+            // Tick game logic when enough time has passed
+            if (elapsed >= gameSpeed) {
+                lastTickTime = timestamp - (elapsed % gameSpeed);
+                draw();
+            }
+
+            game = requestAnimationFrame(gameLoop);
+        }
+        game = requestAnimationFrame(gameLoop);
+    </script>
+</body>
+
+</html>
