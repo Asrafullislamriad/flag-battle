@@ -281,6 +281,66 @@
             font-family: monospace;
         }
 
+        #countdown-timer {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background: rgba(20, 20, 20, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            cursor: move;
+            user-select: none;
+            transition: opacity 0.3s;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #countdown-timer .seconds {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            line-height: 1;
+        }
+
+        #countdown-timer .label {
+            font-size: 0.6rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #countdown-timer .resize-handle {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 15px;
+            height: 15px;
+            cursor: se-resize;
+            background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.3) 50%);
+            border-radius: 0 0 100% 0;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            cursor: grabbing !important;
+        }
+
+        .gallery-item[draggable="true"] {
+            cursor: grab;
+        }
+
+        .gallery-item.drag-over {
+            border: 2px dashed var(--accent-color);
+            transform: scale(0.95);
+        }
+
         #empty-state {
             position: absolute;
             z-index: 2;
@@ -316,6 +376,12 @@
 
     <div id="slider-container">
         <div id="empty-state">No images uploaded yet</div>
+    </div>
+
+    <div id="countdown-timer">
+        <div class="seconds">3</div>
+        <div class="label">sec</div>
+        <div class="resize-handle"></div>
     </div>
 
     <div id="settings-panel">
@@ -480,14 +546,19 @@
             localStorage.setItem('photoSliderInterval', intervalInput.value);
         }
 
+        let draggedItem = null;
+
         function renderGallery() {
             galleryContainer.innerHTML = '';
             if (savedImages.length === 0) {
                 galleryContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #444; margin-top: 20px;">Gallery is empty</p>';
+                return;
             }
-            savedImages.forEach((imgObj) => {
+            savedImages.forEach((imgObj, index) => {
                 const item = document.createElement('div');
                 item.className = 'gallery-item' + (selectedImages.includes(imgObj.src) ? ' selected' : '');
+                item.draggable = true;
+                item.dataset.index = index;
 
                 const deleteBtn = document.createElement('div');
                 deleteBtn.className = 'delete-btn';
@@ -507,8 +578,69 @@
                 item.innerHTML = `<img src="${imgObj.src}"><div class="overlay">✓</div>`;
                 item.appendChild(deleteBtn);
                 item.onclick = () => toggleImageSelection(imgObj.src, item);
+
+                // Drag and Drop Events
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = item;
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                item.addEventListener('dragend', () => {
+                    draggedItem = null;
+                    item.classList.remove('dragging');
+                    const items = galleryContainer.querySelectorAll('.gallery-item');
+                    items.forEach(el => el.classList.remove('drag-over'));
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+
+                item.addEventListener('dragenter', () => {
+                    if (item !== draggedItem) {
+                        item.classList.add('drag-over');
+                    }
+                });
+
+                item.addEventListener('dragleave', () => {
+                    item.classList.remove('drag-over');
+                });
+
+                item.addEventListener('drop', async (e) => {
+                    e.stopPropagation();
+                    if (draggedItem !== item) {
+                        const fromIndex = parseInt(draggedItem.dataset.index);
+                        const toIndex = parseInt(item.dataset.index);
+
+                        // Reorder in array
+                        const [movedItem] = savedImages.splice(fromIndex, 1);
+                        savedImages.splice(toIndex, 0, movedItem);
+
+                        // Persist in DB - we need to clear and re-add to maintain order if using simple getAll
+                        // Or better: update an 'order' field. But for simplicity with current schema:
+                        await reorderInDB();
+                        renderGallery();
+                    }
+                    return false;
+                });
+
                 galleryContainer.appendChild(item);
             });
+        }
+
+        async function reorderInDB() {
+            // Since our store is auto-increment ID, we clear and re-add in order
+            // This is acceptable for smaller galleries.
+            await clearAllImagesFromDB();
+            for (const img of savedImages) {
+                // We don't want to re-add with old IDs
+                const { id, ...data } = img;
+                await addImageToDB(data.src);
+            }
+            // Refresh savedImages to get new IDs
+            savedImages = await getAllImagesFromDB();
         }
 
         function toggleImageSelection(imgSrc, element) {
@@ -565,6 +697,63 @@
             renderGallery();
         };
 
+        const countdownTimer = document.getElementById('countdown-timer');
+        const timerSeconds = countdownTimer.querySelector('.seconds');
+        const resizeHandle = countdownTimer.querySelector('.resize-handle');
+
+        let isDraggingTimer = false;
+        let isResizingTimer = false;
+        let timerStartPos = { x: 0, y: 0 };
+        let timerOffset = { x: 0, y: 0 };
+        let currentTimerSize = 80;
+
+        // Draggable Timer
+        countdownTimer.addEventListener('mousedown', (e) => {
+            if (e.target === resizeHandle) return;
+            isDraggingTimer = true;
+            countdownTimer.classList.add('dragging');
+            timerStartPos = { x: e.clientX, y: e.clientY };
+            const rect = countdownTimer.getBoundingClientRect();
+            timerOffset = { x: rect.left, y: rect.top };
+            e.preventDefault();
+        });
+
+        // Resizable Timer
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizingTimer = true;
+            timerStartPos = { x: e.clientX, y: e.clientY };
+            currentTimerSize = countdownTimer.offsetWidth;
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingTimer) {
+                const dx = e.clientX - timerStartPos.x;
+                const dy = e.clientY - timerStartPos.y;
+                countdownTimer.style.left = (timerOffset.x + dx) + 'px';
+                countdownTimer.style.top = (timerOffset.y + dy) + 'px';
+                countdownTimer.style.bottom = 'auto';
+                countdownTimer.style.right = 'auto';
+            }
+
+            if (isResizingTimer) {
+                const dx = e.clientX - timerStartPos.x;
+                const dy = e.clientY - timerStartPos.y;
+                const newSize = Math.max(50, Math.min(300, currentTimerSize + dx));
+                countdownTimer.style.width = newSize + 'px';
+                countdownTimer.style.height = newSize + 'px';
+                timerSeconds.style.fontSize = (newSize / 80 * 1.8) + 'rem';
+                countdownTimer.querySelector('.label').style.fontSize = (newSize / 80 * 0.6) + 'rem';
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingTimer = false;
+            isResizingTimer = false;
+            countdownTimer.classList.remove('dragging');
+        });
+
         // "hh" detection
         let lastHPress = 0;
         const DOUBLE_PRESS_DELAY = 500;
@@ -595,6 +784,9 @@
                 isRunning = true;
             }
         }
+
+        let countdownInterval = null;
+        let remainingSeconds = 0;
 
         function startSlideshow() {
             // Apply Aspect Ratio
@@ -648,13 +840,26 @@
 
             if (emptyState) emptyState.style.display = 'none';
 
+            // Timer Setup
+            countdownTimer.style.display = 'flex';
+            remainingSeconds = interval / 1000;
+            timerSeconds.textContent = Math.ceil(remainingSeconds);
+
             currentIndex = 0;
             showSlide(currentIndex);
 
             slideInterval = setInterval(() => {
                 currentIndex = (currentIndex + 1) % currentLoopImages.length;
                 showSlide(currentIndex);
+                remainingSeconds = interval / 1000;
+                timerSeconds.textContent = Math.ceil(remainingSeconds);
             }, interval);
+
+            countdownInterval = setInterval(() => {
+                remainingSeconds -= 0.1;
+                if (remainingSeconds < 0) remainingSeconds = 0;
+                timerSeconds.textContent = Math.ceil(remainingSeconds);
+            }, 100);
         }
 
         function stopSlideshow() {
@@ -662,6 +867,11 @@
                 clearInterval(slideInterval);
                 slideInterval = null;
             }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            countdownTimer.style.display = 'none';
         }
 
         function showSlide(index) {
