@@ -1,1125 +1,866 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Smart Snake - ব্যালেন্সড স্মার্ট সাপ 🎯</title>
+    <title>Snake Game</title>
     <style>
         body {
+            background-color: #202124;
+            color: white;
+            font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             margin: 0;
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Main Wrapper */
+        .main-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         canvas {
             background-color: #aad751;
-            border: 15px solid #57606f;
-            border-radius: 10px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
         h1 {
-            margin: 0 0 10px 0;
-            font-size: 32px;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin: 5px 0 10px 0;
+            color: #ffffff;
+            font-size: 26px;
         }
 
-        .controls {
+        /* Stats Panel */
+        .stats {
             display: flex;
             gap: 20px;
-            margin: 15px 0;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        #scoreBoard {
-            font-size: 22px;
+            font-size: 15px;
             font-weight: bold;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            margin-bottom: 12px;
+            background: #303134;
             padding: 8px 20px;
-            border-radius: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            align-items: center;
         }
 
-        .btn-auto {
-            padding: 10px 24px;
+        .stat-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .score-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .stat-item {
+            color: #fbbc04;
+        }
+
+        #highScore {
+            color: #8ab4f8;
+        }
+
+        .rank-wrapper {
+            padding: 0 15px;
+            border-left: 1px solid #5f6368;
+            border-right: 1px solid #5f6368;
+        }
+
+        #rank {
+            transition: color 0.3s ease;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
             font-size: 16px;
-            cursor: pointer;
-            background-color: #ff4757;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-weight: bold;
-            box-shadow: 0 4px #c0392b;
-            transition: all 0.2s;
         }
 
-        .btn-auto:active {
-            box-shadow: 0 2px #c0392b;
-            transform: translateY(2px);
+        .progress-bg {
+            width: 100px;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            overflow: hidden;
         }
 
-        .btn-auto.active {
-            background-color: #2ed573;
-            box-shadow: 0 4px #26af61;
+        .progress-fill {
+            height: 100%;
+            background: #2ecc71;
+            width: 0%;
+            transition: width 0.3s ease;
         }
 
-        .btn-sound {
-            padding: 10px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #ffa502;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-weight: bold;
-            box-shadow: 0 4px #ff6348;
-            transition: all 0.2s;
+        /* Realistic D-Pad matching your image */
+        .dpad-container {
+            display: grid;
+            grid-template-columns: 55px 55px 55px;
+            grid-template-rows: 55px 55px 55px;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
-        .btn-sound:active {
-            box-shadow: 0 2px #ff6348;
-            transform: translateY(2px);
+        .dpad-btn {
+            background: #3c4043;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            color: #9aa0a6;
+            transition: background 0.05s ease, transform 0.05s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
         }
 
-        .btn-sound.muted {
-            background-color: #747d8c;
-            box-shadow: 0 4px #57606f;
+        /* Active (Clicked) State */
+        .dpad-btn.active {
+            background: #5f6368;
+            color: #ffffff;
+            transform: scale(0.9) translateY(2px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
 
-        .speed-control {
+        #btnUp {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        #btnLeft {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        #btnRight {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        #btnDown {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        /* Mini Speed Controls */
+        .controls {
+            background: #303134;
+            padding: 8px 15px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 25px;
-            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
-        .speed-control label {
+        input[type="range"] {
+            width: 100px;
+            cursor: pointer;
+            accent-color: #4285f4;
+        }
+
+        .btn {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
             font-size: 14px;
             font-weight: bold;
-        }
-
-        .speed-control input[type="range"] {
-            width: 120px;
             cursor: pointer;
         }
 
-        #speedValue {
-            min-width: 35px;
+        #speedDisplay {
             font-weight: bold;
-            font-size: 14px;
-        }
-
-        .note {
+            color: #8ab4f8;
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: 10px;
-            text-align: center;
+            width: 50px;
+            text-align: right;
         }
 
-        .ai-status {
-            background: rgba(46, 204, 113, 0.3);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            color: #2ecc71;
-            border: 2px solid rgba(46, 204, 113, 0.5);
-            margin-bottom: 10px;
-            max-width: 600px;
-            text-align: center;
+        /* Secret Control Panel */
+        .control-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(32, 33, 36, 0.95);
+            border: 1px solid #5f6368;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            width: 200px;
+            z-index: 1000;
         }
 
-        #powerDisplay {
-            font-size: 18px;
+        .control-panel h3 {
+            margin: 0;
+            color: #fbbc04;
+            text-align: center;
+            border-bottom: 1px solid #5f6368;
+            padding-bottom: 10px;
+        }
+
+        .control-panel label {
+            font-size: 12px;
+            color: #9aa0a6;
+        }
+
+        .control-panel input {
+            background: #303134;
+            border: 1px solid #5f6368;
+            color: white;
+            padding: 5px;
+            width: 100%;
+            border-radius: 4px;
+        }
+
+        .control-panel button {
+            background: #2ecc71;
+            color: #202124;
             font-weight: bold;
-            background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%);
-            padding: 8px 20px;
-            border-radius: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            color: #fff;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .secret-mobile-btn {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            background: transparent;
+            z-index: 9999;
+            cursor: pointer;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>🐍 ব্যালেন্সড স্মার্ট সাপ 🎯</h1>
+    <div class="main-wrapper">
+        <h1>Snake Game</h1>
 
-    <div class="controls">
-        <div id="scoreBoard">🍎 স্কোর: 0</div>
-        <div id="powerDisplay">⚡ পাওয়ার: 0</div>
-        <button id="autoBtn" class="btn-auto" onclick="toggleAutoMode()">🤖 AI মোড: OFF</button>
-        <button id="soundBtn" class="btn-sound" onclick="toggleSound()">🔊 সাউন্ড: ON</button>
-        <div class="speed-control">
-            <label>⚡ স্পিড:</label>
-            <input type="range" id="speedSlider" min="5" max="200" value="80" step="5">
-            <span id="speedValue">সাধারণ</span>
+        <div class="stats">
+            <div class="stat-group score-row">
+                <span class="stat-item" id="score">Score: 0</span>
+                <span class="stat-item" id="highScore">High: 0</span>
+            </div>
+            <div class="stat-group rank-wrapper">
+                <span id="rank">Silver</span>
+                <div class="progress-bg">
+                    <div class="progress-fill" id="rankProgress"></div>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+        <!-- Simulated D-Pad -->
+        <div class="dpad-container">
+            <div class="dpad-btn" id="btnUp">▲</div>
+            <div class="dpad-btn" id="btnLeft">◀</div>
+            <div class="dpad-btn" id="btnRight">▶</div>
+            <div class="dpad-btn" id="btnDown">▼</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="btnMinus">−</button>
+            <input type="range" id="speedSlider" min="2" max="500" value="40">
+            <button class="btn" id="btnPlus">+</button>
+            <span id="speedDisplay">40 FPS</span>
         </div>
     </div>
 
-    <div class="ai-status" id="aiStatus" style="display: none;">
-        🧠 AI: Ready
+    <div class="control-panel" id="adminPanel">
+        <h3>Streamer Panel</h3>
+        <div style="display: none;">
+            <div><label>Death Target Score:</label><input type="number" id="deathTarget" value="0"></div>
+            <div><label>Win Target Score:</label><input type="number" id="winTarget" value="0"></div>
+            <div><label>Loop Tolerance (Moves):</label><input type="number" id="loopTarget" value="400"></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="autoStreamerToggle" style="width: auto;">
+            <label style="color: #fbbc04; font-weight: bold; font-size: 13px;">Auto-Streamer Mode</label>
+        </div>
+
+        <div id="cycleConfig" style="display: none; flex-direction: column; gap: 8px; font-size: 11px;">
+            <div style="color: #9aa0a6; font-weight: bold; margin-bottom: 2px;">Target Cycle Configuration:</div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Win (Rank Master+):</label>
+                <input type="range" id="cycleWin" min="0" max="5" value="1" style="width: 70px;">
+                <span id="cycleWinVal" style="width: 15px; text-align: right; color: #8ab4f8;">1</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Death @ Grandmaster:</label>
+                <input type="range" id="cycleGM" min="0" max="5" value="2" style="width: 70px;">
+                <span id="cycleGMVal" style="width: 15px; text-align: right; color: #8ab4f8;">2</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Death @ Heroic:</label>
+                <input type="range" id="cycleHeroic" min="0" max="5" value="1" style="width: 70px;">
+                <span id="cycleHeroicVal" style="width: 15px; text-align: right; color: #8ab4f8;">1</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Death @ Diamond:</label>
+                <input type="range" id="cycleDiamond" min="0" max="5" value="0" style="width: 70px;">
+                <span id="cycleDiamondVal" style="width: 15px; text-align: right; color: #8ab4f8;">0</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Death @ Platinum:</label>
+                <input type="range" id="cyclePlatinum" min="0" max="5" value="0" style="width: 70px;">
+                <span id="cyclePlatinumVal" style="width: 15px; text-align: right; color: #8ab4f8;">0</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Death @ Gold:</label>
+                <input type="range" id="cycleGold" min="0" max="5" value="1" style="width: 70px;">
+                <span id="cycleGoldVal" style="width: 15px; text-align: right; color: #8ab4f8;">1</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label>Death @ Silver:</label>
+                <input type="range" id="cycleSilver" min="0" max="5" value="0" style="width: 70px;">
+                <span id="cycleSilverVal" style="width: 15px; text-align: right; color: #8ab4f8;">0</span>
+            </div>
+        </div>
+
+        <div id="autoStreamerStatus"
+            style="font-size: 11px; color: #8ab4f8; font-weight: bold; background: #303134; padding: 5px; border-radius: 4px; text-align: center; margin-top: 5px;">
+            Status: Disabled</div>
+        <button id="closePanelBtn">Save & Hide</button>
     </div>
 
-    <canvas id="gameCanvas" width="608" height="608"></canvas>
-    <div class="note">
-        ⌨️ Arrow Keys দিয়ে খেলুন | 🎯 ব্যালেন্সড AI - খায় + বাঁচে!<br>
-        🧠 স্মার্ট রিস্ক ম্যানেজমেন্ট | 🏆 পুরো বোর্ড দখল করতে পারে
-    </div>
+    <!-- Hidden Mobile Button for Streamer Panel -->
+    <div class="secret-mobile-btn" id="secretMobileBtn"
+        style="left: 0; right: auto; top: 50%; transform: translateY(-50%); width: 60px; height: 100px;"></div>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        // --- Web Audio API for Sound Effects ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioInitialized = false;
 
-        const box = 32;
-        const rows = 19;
-        const cols = 19;
-
-        let snake = [];
-        snake[0] = { x: 9 * box, y: 10 * box, px: 9 * box, py: 10 * box };
-
-        // Previous positions for interpolation
-        let prevSnake = [{ x: 9 * box, y: 10 * box }];
-
-        let food = {
-            x: Math.floor(Math.random() * 17 + 1) * box,
-            y: Math.floor(Math.random() * 15 + 3) * box
-        };
-
-        let score = 0;
-        let d;
-        let isAutoMode = false;
-        let game;
-        let gameSpeed = 80;
-        let isDead = false;
-        let isSoundEnabled = true;
-        let snakeSet = new Set(); // O(1) collision lookup
-        snakeSet.add(snake[0].x + ',' + snake[0].y);
-
-        // Animation variables
-        let blinkTimer = 0;
-        let isBlinking = false;
-        let tongueExtend = 0;
-        let tongueDirection = 1;
-        let deathAnimationFrame = 0;
-
-        // AI variables
-        let lastMoves = [];
-        let stuckCounter = 0;
-        let tailFollowCount = 0;
-
-        // Super Food & Jump Power variables
-        let superFood = null;
-        let superFoodSpawnTimer = 0;
-        let superFoodLifeTimer = 0;
-        let jumpPowers = 0;
-        let isJumping = false;
-        let jumpFlashTimer = 0;
-        let superFoodPulse = 0;
-        let frameCount = 0;
-        let nextSuperFoodSpawn = 0; // pre-calculated spawn threshold
-        const SUPER_FOOD_SPAWN_INTERVAL_MIN = 15;
-        const SUPER_FOOD_SPAWN_INTERVAL_MAX = 25;
-        const SUPER_FOOD_LIFE_DURATION = 5;
-        const MAX_JUMP_POWERS = 3;
-
-        function resetSuperFoodTimer() {
-            nextSuperFoodSpawn = Math.floor(
-                (SUPER_FOOD_SPAWN_INTERVAL_MIN + Math.random() * (SUPER_FOOD_SPAWN_INTERVAL_MAX - SUPER_FOOD_SPAWN_INTERVAL_MIN)) * (1000 / gameSpeed)
-            );
-            superFoodSpawnTimer = 0;
+        // ব্রাউজারের অডিও আনলক করার জন্য ইভেন্ট
+        function initAudio() {
+            if (!audioInitialized) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                audioInitialized = true;
+            }
         }
-        resetSuperFoodTimer();
+        window.addEventListener('click', initAudio);
+        window.addEventListener('keydown', initAudio);
 
-        // ============ SOUND SYSTEM ============
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // মেকানিক্যাল বাটন ক্লিক সাউন্ড
+        function playClickSound() {
+            if (!audioInitialized) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.04);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime); // Sound volume
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.04);
+        }
 
+        // আপেল খাওয়ার সাউন্ড
         function playEatSound() {
-            if (!isSoundEnabled) return;
-
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
-
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.15);
+            if (!audioInitialized) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
         }
 
-        function playGameOverSound() {
-            if (!isSoundEnabled) return;
+        // --- Variables & Logic ---
+        const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score'); const highScoreElement = document.getElementById('highScore');
+        const rankElement = document.getElementById('rank'); const rankProgress = document.getElementById('rankProgress');
+        const speedSlider = document.getElementById('speedSlider'); const speedDisplay = document.getElementById('speedDisplay');
+        const adminPanel = document.getElementById('adminPanel'); const secretMobileBtn = document.getElementById('secretMobileBtn');
 
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+        const gridSize = 20; const tileCount = canvas.width / gridSize;
+        let snake = []; let foods = []; const MAX_FOODS = 3;
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+        let score = 0; let highestScore = localStorage.getItem('snakeHighScore') || 0;
+        highScoreElement.innerText = `High: ${highestScore}`;
 
-            oscillator.type = 'sawtooth';
-            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+        let targetDeathScore = 0; let targetWinScore = 0; let loopTolerance = 400; let movesWithoutEating = 0;
 
-            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        let logicAccumulator = 0; let lastTime = 0; let previousTail = null; let ateFoodThisFrame = false;
+        let isAuto = true; let gameState = 'PLAYING';
+        let manualDir = { x: 1, y: 0 }; let nextManualDir = { x: 1, y: 0 };
+        let screenTimestamp = 0; let screenTimeLeft = 0;
 
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.5);
+        const ranks = [
+            { name: "Silver", min: 0, color: "#bdc3c7" }, { name: "Gold", min: 100, color: "#f1c40f" },
+            { name: "Platinum", min: 250, color: "#1abc9c" }, { name: "Diamond", min: 450, color: "#9b59b6" },
+            { name: "Heroic", min: 750, color: "#e74c3c" }, { name: "Master", min: 1200, color: "#e67e22" },
+            { name: "Grandmaster", min: 1800, color: "#ff9f43" }
+        ];
 
-            setTimeout(() => {
-                const crashOsc = audioContext.createOscillator();
-                const crashGain = audioContext.createGain();
-
-                crashOsc.connect(crashGain);
-                crashGain.connect(audioContext.destination);
-
-                crashOsc.type = 'square';
-                crashOsc.frequency.setValueAtTime(150, audioContext.currentTime);
-
-                crashGain.gain.setValueAtTime(0.2, audioContext.currentTime);
-                crashGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-
-                crashOsc.start(audioContext.currentTime);
-                crashOsc.stop(audioContext.currentTime + 0.3);
-            }, 100);
+        function updateRank() {
+            let currentRank = ranks[0], nextRank = null;
+            for (let i = 0; i < ranks.length; i++) { if (score >= ranks[i].min) { currentRank = ranks[i]; nextRank = ranks[i + 1] || null; } }
+            rankElement.innerText = currentRank.name; rankElement.style.color = currentRank.color; rankProgress.style.backgroundColor = currentRank.color;
+            if (!nextRank) { rankElement.style.textShadow = "0 0 10px #ff9f43"; rankProgress.style.width = '100%'; }
+            else { rankElement.style.textShadow = "none"; rankProgress.style.width = `${((score - currentRank.min) / (nextRank.min - currentRank.min)) * 100}%`; }
         }
 
-        function playMoveSound() {
-            if (!isSoundEnabled) return;
-
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-
-            gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.05);
+        function updateSpeedDisplay() {
+            let fps = parseInt(speedSlider.value);
+            if (fps < 10) speedDisplay.innerText = "Slow"; else if (fps >= 500) speedDisplay.innerText = "MAX"; else speedDisplay.innerText = fps + " FPS";
+            localStorage.setItem('snakeGameSpeed', fps);
         }
 
-        function toggleSound() {
-            isSoundEnabled = !isSoundEnabled;
-            const btn = document.getElementById("soundBtn");
-            if (isSoundEnabled) {
-                btn.innerText = "🔊 সাউন্ড: ON";
-                btn.classList.remove("muted");
-            } else {
-                btn.innerText = "🔇 সাউন্ড: OFF";
-                btn.classList.add("muted");
+        let savedSpeed = localStorage.getItem('snakeGameSpeed');
+        if (savedSpeed !== null) {
+            speedSlider.value = savedSpeed;
+        }
+        updateSpeedDisplay();
+
+        speedSlider.addEventListener('input', updateSpeedDisplay);
+        document.getElementById('btnMinus').addEventListener('click', () => { speedSlider.value = Math.max(parseInt(speedSlider.min), parseInt(speedSlider.value) - 1); updateSpeedDisplay(); });
+        document.getElementById('btnPlus').addEventListener('click', () => { speedSlider.value = Math.min(parseInt(speedSlider.max), parseInt(speedSlider.value) + 1); updateSpeedDisplay(); });
+
+        function toggleAdminPanel() { adminPanel.style.display = (adminPanel.style.display === 'flex') ? 'none' : 'flex'; }
+
+        let cycleIndex = 0;
+        let dynamicScript = [];
+
+        function buildDynamicScript() {
+            dynamicScript = [];
+            let wCount = parseInt(document.getElementById('cycleWin').value) || 0;
+            let gmCount = parseInt(document.getElementById('cycleGM').value) || 0;
+            let heroicCount = parseInt(document.getElementById('cycleHeroic').value) || 0;
+            let diamondCount = parseInt(document.getElementById('cycleDiamond').value) || 0;
+            let platCount = parseInt(document.getElementById('cyclePlatinum').value) || 0;
+            let goldCount = parseInt(document.getElementById('cycleGold').value) || 0;
+            let silverCount = parseInt(document.getElementById('cycleSilver').value) || 0;
+
+            for (let i = 0; i < wCount; i++) dynamicScript.push({ type: "WIN", text: "Next: Epic Win (Almost Full Board)" });
+            for (let i = 0; i < gmCount; i++) dynamicScript.push({ type: "FAIL", targetDeathMin: 1820, targetDeathMax: 1950, rank: "Grandmaster" });
+            for (let i = 0; i < heroicCount; i++) dynamicScript.push({ type: "FAIL", targetDeathMin: 850, targetDeathMax: 1100, rank: "Heroic" });
+            for (let i = 0; i < diamondCount; i++) dynamicScript.push({ type: "FAIL", targetDeathMin: 470, targetDeathMax: 700, rank: "Diamond" });
+            for (let i = 0; i < platCount; i++) dynamicScript.push({ type: "FAIL", targetDeathMin: 270, targetDeathMax: 420, rank: "Platinum" });
+            for (let i = 0; i < goldCount; i++) dynamicScript.push({ type: "FAIL", targetDeathMin: 120, targetDeathMax: 220, rank: "Gold" });
+            for (let i = 0; i < silverCount; i++) dynamicScript.push({ type: "FAIL", targetDeathMin: 40, targetDeathMax: 90, rank: "Silver" });
+
+            // Default failsafe if script is empty
+            if (dynamicScript.length === 0) {
+                dynamicScript.push({ type: "WIN", text: "Next: Epic Win (Almost Full Board)" });
             }
         }
 
-        const speedSlider = document.getElementById("speedSlider");
-        const speedValue = document.getElementById("speedValue");
+        // Setup slider values text update and save
+        const sliderIds = ['cycleWin', 'cycleGM', 'cycleHeroic', 'cycleDiamond', 'cyclePlatinum', 'cycleGold', 'cycleSilver'];
+        sliderIds.forEach(id => {
+            let el = document.getElementById(id);
+            let valEl = document.getElementById(id + "Val");
 
-        speedSlider.addEventListener("input", function () {
-            gameSpeed = parseInt(this.value);
-            let speedText = "সাধারণ";
-            if (gameSpeed <= 10) speedText = "গড মোড ⚡⚡⚡";
-            else if (gameSpeed <= 30) speedText = "অতি দ্রুত 🚀🚀🚀";
-            else if (gameSpeed <= 50) speedText = "খুব দ্রুত 🚀🚀";
-            else if (gameSpeed <= 70) speedText = "দ্রুত 🚀";
-            else if (gameSpeed <= 100) speedText = "স্বাভাবিক ⚡";
-            else if (gameSpeed <= 140) speedText = "মাঝারি 🐢";
-            else speedText = "ধীর 🐌";
+            // Load saved
+            let saved = localStorage.getItem('snakeAuto_' + id);
+            if (saved !== null) { el.value = saved; }
+            valEl.innerText = el.value;
 
-            speedValue.textContent = speedText;
+            el.addEventListener('input', () => {
+                valEl.innerText = el.value;
+                localStorage.setItem('snakeAuto_' + id, el.value);
+                buildDynamicScript();
+                cycleIndex = 0; // reset cycle on config change
+                planNextAutoStreamerGame();
+            });
+        });
 
-            if (game) {
-                // Just update gameSpeed; requestAnimationFrame uses it automatically
-                resetSuperFoodTimer();
+        const autoToggleEl = document.getElementById('autoStreamerToggle');
+        const cycleConfigEl = document.getElementById('cycleConfig');
+
+        let savedToggle = localStorage.getItem('snakeAuto_toggle');
+        if (savedToggle === 'true') {
+            autoToggleEl.checked = true;
+            cycleConfigEl.style.display = 'flex';
+        }
+
+        autoToggleEl.addEventListener('change', () => {
+            cycleConfigEl.style.display = autoToggleEl.checked ? 'flex' : 'none';
+            localStorage.setItem('snakeAuto_toggle', autoToggleEl.checked);
+            cycleIndex = 0;
+            planNextAutoStreamerGame();
+        });
+
+
+        function planNextAutoStreamerGame() {
+            let autoToggle = document.getElementById('autoStreamerToggle');
+            let statusDisplay = document.getElementById('autoStreamerStatus');
+            if (!autoToggle) return;
+            if (!autoToggle.checked) {
+                statusDisplay.innerText = "Status: Disabled";
+                return;
+            }
+
+            if (dynamicScript.length === 0) buildDynamicScript();
+            if (cycleIndex >= dynamicScript.length) cycleIndex = 0;
+
+            let currentStep = dynamicScript[cycleIndex];
+
+            if (currentStep.type === "WIN") {
+                targetDeathScore = 0;
+
+                // 20x20 grid = 400 total tiles.
+                // Initial snake 5. Total possible food = 395. Score = 3950.
+                // 10 to 15 steps less = (380 to 385 score range)
+                let maxScore = 3950;
+                let stepsLess = Math.floor(Math.random() * 6) + 10; // Random number from 10 to 15
+                targetWinScore = maxScore - (stepsLess * 10);
+
+                statusDisplay.innerText = currentStep.text + ` (~${targetWinScore})`;
+            } else {
+                targetWinScore = 0;
+                let plannedDeathScore = Math.floor(Math.random() * ((currentStep.targetDeathMax - currentStep.targetDeathMin) / 10 + 1)) * 10 + currentStep.targetDeathMin;
+                targetDeathScore = plannedDeathScore;
+                statusDisplay.innerText = `Next: Fake Death @ ${currentStep.rank} (~${plannedDeathScore})`;
+            }
+
+            document.getElementById('deathTarget').value = targetDeathScore;
+            document.getElementById('winTarget').value = targetWinScore;
+        }
+
+        function updateCycleAfterGame() {
+            let autoToggle = document.getElementById('autoStreamerToggle');
+            if (autoToggle && !autoToggle.checked) return;
+
+            cycleIndex++;
+            if (cycleIndex >= dynamicScript.length) {
+                cycleIndex = 0;
+            }
+            planNextAutoStreamerGame();
+        }
+
+        document.getElementById('autoStreamerToggle').addEventListener('change', planNextAutoStreamerGame);
+        setTimeout(planNextAutoStreamerGame, 100);
+
+        document.getElementById('closePanelBtn').addEventListener('click', () => {
+            targetDeathScore = parseInt(document.getElementById('deathTarget').value) || 0;
+            targetWinScore = parseInt(document.getElementById('winTarget').value) || 0;
+            loopTolerance = parseInt(document.getElementById('loopTarget').value) || 400;
+            if (document.getElementById('autoStreamerToggle').checked) {
+                planNextAutoStreamerGame();
+            }
+            toggleAdminPanel();
+        });
+
+        // Double Tap Logic for Hidden Mobile Button
+        let clickTimer = null;
+        secretMobileBtn.addEventListener('click', (e) => {
+            if (clickTimer === null) {
+                // First click - start timer
+                clickTimer = setTimeout(() => {
+                    clickTimer = null; // Reset if no second click within 300ms
+                }, 300);
+            } else {
+                // Second click within 300ms - It's a double tap!
+                clearTimeout(clickTimer);
+                clickTimer = null;
+                toggleAdminPanel();
+                e.preventDefault();
             }
         });
 
-        document.addEventListener("keydown", direction);
+        // Add additional dblclick listener for Desktop support just in case
+        secretMobileBtn.addEventListener('dblclick', (e) => {
+            toggleAdminPanel();
+            e.preventDefault();
+        });
 
-        function direction(event) {
-            if (isAutoMode || isDead) return;
+        let lastKey = ''; let lastKeyTime = 0;
+        window.addEventListener('keydown', (e) => {
+            let key = e.key.toLowerCase(); let now = Date.now();
+            if (key === lastKey && now - lastKeyTime < 400) {
+                if (key === 'a') { isAuto = true; gameState = 'PLAYING'; }
+                if (key === 'm') { isAuto = false; gameState = 'PAUSED'; nextManualDir = { x: snake[0].x - snake[1].x, y: snake[0].y - snake[1].y }; }
+                if (key === 'c') { toggleAdminPanel(); }
+            }
+            lastKey = key; lastKeyTime = now;
+            if (!isAuto && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
+                let moved = false;
+                if (key === 'w' || key === 'arrowup') { if (manualDir.y === 0) { nextManualDir = { x: 0, y: -1 }; moved = true; } }
+                else if (key === 's' || key === 'arrowdown') { if (manualDir.y === 0) { nextManualDir = { x: 0, y: 1 }; moved = true; } }
+                else if (key === 'a' || key === 'arrowleft') { if (manualDir.x === 0) { nextManualDir = { x: -1, y: 0 }; moved = true; } }
+                else if (key === 'd' || key === 'arrowright') { if (manualDir.x === 0) { nextManualDir = { x: 1, y: 0 }; moved = true; } }
+                if (moved && gameState === 'PAUSED') gameState = 'PLAYING';
+            }
+        });
 
-            let key = event.keyCode;
-            let newDir = null;
+        // --- D-Pad Sync Animation ---
+        function highlightDpad(dx, dy) {
+            document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('active'));
+            let btn = null;
+            if (dx === 1) btn = document.getElementById('btnRight');
+            else if (dx === -1) btn = document.getElementById('btnLeft');
+            else if (dy === 1) btn = document.getElementById('btnDown');
+            else if (dy === -1) btn = document.getElementById('btnUp');
 
-            if (key == 37 && d != "RIGHT") { newDir = "LEFT"; }
-            else if (key == 38 && d != "DOWN") { newDir = "UP"; }
-            else if (key == 39 && d != "LEFT") { newDir = "RIGHT"; }
-            else if (key == 40 && d != "UP") { newDir = "DOWN"; }
-
-            if (newDir && newDir != d) {
-                d = newDir;
-                playMoveSound();
+            if (btn) {
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 120); // 120ms animation delay
             }
         }
 
-        function toggleAutoMode() {
-            isAutoMode = !isAutoMode;
-            const btn = document.getElementById("autoBtn");
-            const aiStatus = document.getElementById("aiStatus");
-
-            if (isAutoMode) {
-                btn.innerText = "🤖 AI মোড: ON";
-                btn.classList.add("active");
-                aiStatus.style.display = "block";
-                lastMoves = [];
-                stuckCounter = 0;
-            } else {
-                btn.innerText = "🤖 AI মোড: OFF";
-                btn.classList.remove("active");
-                aiStatus.style.display = "none";
-            }
+        function initGame() {
+            snake = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }, { x: 10, y: 13 }, { x: 10, y: 14 }];
+            previousTail = { x: 10, y: 15 }; foods = []; ateFoodThisFrame = false; score = 0; movesWithoutEating = 0;
+            scoreElement.innerText = `Score: ${score}`; gameState = isAuto ? 'PLAYING' : 'PAUSED';
+            updateRank(); logicAccumulator = 0; updateSpeedDisplay(); placeFood();
         }
 
-        function collision(head, array) {
-            for (let i = 0; i < array.length; i++) {
-                if (head.x == array[i].x && head.y == array[i].y) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // ============ BALANCED SMART AI ============
-
-        function isValidPosition(pos, snakeArray) {
-            if (pos.x < 0 || pos.x >= 19 * box || pos.y < 0 || pos.y >= 19 * box) return false;
-            // Use Set for fast lookup when checking against main snake
-            if (snakeArray === snake) {
-                return !snakeSet.has(pos.x + ',' + pos.y);
-            }
-            for (let i = 0; i < snakeArray.length; i++) {
-                if (pos.x == snakeArray[i].x && pos.y == snakeArray[i].y) return false;
-            }
-            return true;
-        }
-
-        // Flood fill - accessible space counting (DYNAMIC)
-        function countAccessibleSpace(startPos, simulatedSnake) {
-            let visited = new Set();
-            let queue = [startPos];
-            visited.add(startPos.x + "," + startPos.y);
-            let count = 0;
-
-            // 🔥 DYNAMIC maxCount based on snake length
-            let snakeLength = snake.length;
-            let maxCount;
-
-            if (snakeLength < 50) {
-                maxCount = 100;
-            } else if (snakeLength < 100) {
-                maxCount = 150;
-            } else if (snakeLength < 200) {
-                maxCount = 200;
-            } else {
-                maxCount = 250;
-            }
-
-            while (queue.length > 0 && count < maxCount) {
-                let pos = queue.shift();
-                count++;
-
-                let neighbors = [
-                    { x: pos.x - box, y: pos.y },
-                    { x: pos.x + box, y: pos.y },
-                    { x: pos.x, y: pos.y - box },
-                    { x: pos.x, y: pos.y + box }
-                ];
-
-                for (let next of neighbors) {
-                    let key = next.x + "," + next.y;
-                    if (!visited.has(key) && isValidPosition(next, simulatedSnake)) {
-                        visited.add(key);
-                        queue.push(next);
+        function placeFood() {
+            while (foods.length < MAX_FOODS) {
+                let emptySpots = [];
+                for (let x = 0; x < tileCount; x++) {
+                    for (let y = 0; y < tileCount; y++) {
+                        if (!snake.some(s => s.x === x && s.y === y) && !foods.some(f => f.x === x && f.y === y)) emptySpots.push({ x, y });
                     }
                 }
+                if (emptySpots.length > 0) foods.push(emptySpots[Math.floor(Math.random() * emptySpots.length)]); else break;
             }
-
-            return count;
         }
 
-        // BFS Pathfinding — optimized with parent map instead of path copies
-        function findPath(start, target, simulatedSnake) {
-            let visited = new Set();
-            let queue = [start];
-            let parent = new Map();
-            let startKey = start.x + ',' + start.y;
-            visited.add(startKey);
-
+        function bfs(start, target, obstacles) {
+            let queue = [[start]]; let visited = new Set(); visited.add(`${start.x},${start.y}`);
+            let obstacleSet = new Set(obstacles.map(p => `${p.x},${p.y}`));
             while (queue.length > 0) {
-                let current = queue.shift();
-
-                if (current.x === target.x && current.y === target.y) {
-                    // Reconstruct path
-                    let path = [current];
-                    let key = current.x + ',' + current.y;
-                    while (parent.has(key)) {
-                        current = parent.get(key);
-                        path.unshift(current);
-                        key = current.x + ',' + current.y;
-                    }
-                    return path;
-                }
-
-                let neighbors = [
-                    { x: current.x - box, y: current.y },
-                    { x: current.x + box, y: current.y },
-                    { x: current.x, y: current.y - box },
-                    { x: current.x, y: current.y + box }
-                ];
-
-                for (let next of neighbors) {
-                    let key = next.x + ',' + next.y;
-                    if (!visited.has(key) && isValidPosition(next, simulatedSnake)) {
-                        visited.add(key);
-                        parent.set(key, current);
-                        queue.push(next);
+                let path = queue.shift(); let current = path[path.length - 1];
+                if (current.x === target.x && current.y === target.y) return path;
+                let neighbors = [{ x: current.x, y: current.y - 1 }, { x: current.x, y: current.y + 1 }, { x: current.x - 1, y: current.y }, { x: current.x + 1, y: current.y }];
+                for (let n of neighbors) {
+                    if (n.x >= 0 && n.x < tileCount && n.y >= 0 && n.y < tileCount) {
+                        let key = `${n.x},${n.y}`;
+                        if (!visited.has(key) && !obstacleSet.has(key)) { visited.add(key); queue.push([...path, n]); }
                     }
                 }
             }
             return null;
         }
 
-        // 🎯 TAIL REACHABILITY CHECK
-        function isTailReachable(head, currentSnake) {
-            // সাপের লেজ হলো শেষ সেগমেন্ট।
-            let tail = currentSnake[currentSnake.length - 1];
-            // লেজ ছাড়া সাপের বডি যাতে পথ খোঁজা যায়
-            let snakeWithoutTail = currentSnake.slice(0, -1);
-            return !!findPath(head, tail, snakeWithoutTail);
-        }
-
-        // 🎯 UNIFIED AI - একটাই নিয়ম: প্রতিটি মুভে বের হওয়ার রাস্তা রাখো
-        function getAutoMove() {
-            let aiStatus = document.getElementById("aiStatus");
+        function getBestAutoMove() {
             let head = snake[0];
 
-            // সব সম্ভাব্য মুভ বের করো
-            let allMoves = [
-                { dir: "LEFT", x: head.x - box, y: head.y },
-                { dir: "RIGHT", x: head.x + box, y: head.y },
-                { dir: "UP", x: head.x, y: head.y - box },
-                { dir: "DOWN", x: head.x, y: head.y + box }
-            ].filter(move => !isOpposite(move.dir) && isValidPosition(move, snake));
-
-            if (allMoves.length === 0) return d;
-
-            // প্রতিটি মুভের জন্য: স্পেস, tail reachability, ফুডের দূরত্ব
-            let evaluatedMoves = allMoves.map(move => {
-                let simSnake = [move, ...snake.slice(0, -1)];
-                let space = countAccessibleSpace(move, simSnake);
-                let canReachTail = isTailReachable(move, simSnake);
-                let distToFood = Math.abs(move.x - food.x) + Math.abs(move.y - food.y);
-
-                return {
-                    dir: move.dir,
-                    pos: move,
-                    space: space,
-                    safe: canReachTail,
-                    distToFood: distToFood
-                };
-            });
-
-            // নিরাপদ মুভগুলো আলাদা করো
-            let safeMoves = evaluatedMoves.filter(m => m.safe);
-
-            // কোনো safe move না থাকলে সবচেয়ে বেশি স্পেসওয়ালা নাও
-            if (safeMoves.length === 0) {
-                evaluatedMoves.sort((a, b) => b.space - a.space);
-                aiStatus.textContent = "⚠️ AI: No safe exit!";
-                return evaluatedMoves[0].dir;
+            if (targetDeathScore > 0 && score >= targetDeathScore) {
+                let neighbors = [{ x: head.x, y: head.y - 1 }, { x: head.x, y: head.y + 1 }, { x: head.x - 1, y: head.y }, { x: head.x + 1, y: head.y }];
+                for (let n of neighbors) { if (n.x < 0 || n.y < 0 || n.x >= tileCount || n.y >= tileCount || snake.some(s => s.x === n.x && s.y === n.y)) return n; }
             }
 
-            // ===== SUPER FOOD CHECK (highest priority) =====
-            if (superFood && jumpPowers < MAX_JUMP_POWERS) {
-                let sfPath = findPath(head, superFood, snake);
-                if (sfPath && sfPath.length > 1) {
-                    let sfNext = sfPath[1];
-                    let sfDir = "";
-                    if (sfNext.x < head.x) sfDir = "LEFT";
-                    else if (sfNext.x > head.x) sfDir = "RIGHT";
-                    else if (sfNext.y < head.y) sfDir = "UP";
-                    else if (sfNext.y > head.y) sfDir = "DOWN";
-
-                    let sfMove = evaluatedMoves.find(m => m.dir === sfDir);
-                    if (sfMove && sfMove.safe) {
-                        aiStatus.textContent = "⭐ AI: Going for SUPER FOOD!";
-                        return sfDir;
+            let bestPath = null;
+            for (let food of foods) {
+                let pathToFood = bfs(head, food, snake);
+                if (pathToFood && pathToFood.length > 1) {
+                    let finalState = []; for (let i = pathToFood.length - 1; i >= 0; i--) finalState.push(pathToFood[i]);
+                    let remainingLen = snake.length + 1 - finalState.length;
+                    for (let i = 1; i <= remainingLen; i++) if (i < snake.length) finalState.push(snake[i]);
+                    let pathToTailAfterEating = bfs(finalState[0], finalState[finalState.length - 1], finalState.slice(0, -1));
+                    if (pathToTailAfterEating || finalState.length < 5) {
+                        if (!bestPath || pathToFood.length < bestPath.length) bestPath = pathToFood;
                     }
                 }
             }
+            if (bestPath) return bestPath[1];
 
-            // ===== FOOD CHECK =====
-            let foodPath = findPath(head, food, snake);
-            if (foodPath && foodPath.length > 1) {
-                let futureSnake = [food, ...snake];
-                let afterEatTailReachable = isTailReachable(food, futureSnake);
-                let afterEatSpace = countAccessibleSpace(food, futureSnake);
-
-                if (afterEatTailReachable && afterEatSpace > snake.length) {
-                    let nextStep = foodPath[1];
-                    let foodDir = "";
-                    if (nextStep.x < head.x) foodDir = "LEFT";
-                    else if (nextStep.x > head.x) foodDir = "RIGHT";
-                    else if (nextStep.y < head.y) foodDir = "UP";
-                    else if (nextStep.y > head.y) foodDir = "DOWN";
-
-                    let foodMove = evaluatedMoves.find(m => m.dir === foodDir);
-                    if (foodMove && foodMove.safe) {
-                        aiStatus.textContent = "🍎 AI: Going for food!";
-                        return foodDir;
+            let neighbors = [{ x: head.x, y: head.y - 1 }, { x: head.x, y: head.y + 1 }, { x: head.x - 1, y: head.y }, { x: head.x + 1, y: head.y }];
+            let safeMoves = [];
+            for (let n of neighbors) {
+                if (n.x >= 0 && n.x < tileCount && n.y >= 0 && n.y < tileCount) {
+                    let isCrash = snake.slice(0, -1).some(s => s.x === n.x && s.y === n.y);
+                    if (!isCrash) {
+                        let tempSnake = [n, ...snake.slice(0, -1)];
+                        let pToTail = bfs(tempSnake[0], tempSnake[tempSnake.length - 1], tempSnake.slice(0, -1));
+                        if (pToTail) safeMoves.push({ move: n, dist: pToTail.length });
                     }
                 }
             }
-
-            // ===== PATROL: safe মুভের মধ্যে food/super food-এর দিকে যাও =====
-            let targetX = food.x, targetY = food.y;
-            if (superFood && jumpPowers < MAX_JUMP_POWERS) {
-                let distToSF = Math.abs(head.x - superFood.x) + Math.abs(head.y - superFood.y);
-                let distToFood = Math.abs(head.x - food.x) + Math.abs(head.y - food.y);
-                if (distToSF < distToFood) {
-                    targetX = superFood.x;
-                    targetY = superFood.y;
-                }
+            if (safeMoves.length > 0) { safeMoves.sort((a, b) => b.dist - a.dist); return safeMoves[0].move; }
+            for (let n of neighbors) {
+                if (n.x >= 0 && n.x < tileCount && n.y >= 0 && n.y < tileCount) { if (!snake.some(s => s.x === n.x && s.y === n.y)) return n; }
             }
-
-            safeMoves.sort((a, b) => {
-                let distA = Math.abs(a.pos.x - targetX) + Math.abs(a.pos.y - targetY);
-                let distB = Math.abs(b.pos.x - targetX) + Math.abs(b.pos.y - targetY);
-                let scoreA = -distA * 10 + a.space;
-                let scoreB = -distB * 10 + b.space;
-                return scoreB - scoreA;
-            });
-
-            aiStatus.textContent = "🛡️ AI: Safe patrol → food";
-            return safeMoves[0].dir;
+            return head;
         }
 
-        function isOpposite(newDir) {
-            if (d == "LEFT" && newDir == "RIGHT") return true;
-            if (d == "RIGHT" && newDir == "LEFT") return true;
-            if (d == "UP" && newDir == "DOWN") return true;
-            if (d == "DOWN" && newDir == "UP") return true;
-            return false;
-        }
+        function checkSaveScore() { if (score > highestScore) { highestScore = score; localStorage.setItem('snakeHighScore', highestScore); highScoreElement.innerText = `High: ${highestScore}`; } }
+        function handleGameOver() { checkSaveScore(); updateCycleAfterGame(); gameState = 'GAMEOVER'; screenTimestamp = Date.now(); screenTimeLeft = 5; }
+        function handleWin() { checkSaveScore(); updateCycleAfterGame(); gameState = 'WIN'; screenTimestamp = Date.now(); screenTimeLeft = 5; }
 
-        // 🐍 GOOGLE SNAKE STYLE DRAWING
-        const BODY_WIDTH = box * 0.75; // tube thickness
-        const HEAD_SIZE = box * 0.9;   // head is slightly bigger
+        function update() {
+            let nextMove;
+            if (isAuto) nextMove = getBestAutoMove();
+            else { manualDir = nextManualDir; nextMove = { x: snake[0].x + manualDir.x, y: snake[0].y + manualDir.y }; }
 
-        function getSegmentDir(from, to) {
-            if (to.x > from.x) return 'RIGHT';
-            if (to.x < from.x) return 'LEFT';
-            if (to.y > from.y) return 'DOWN';
-            return 'UP';
-        }
+            let newHead = { x: nextMove.x, y: nextMove.y };
 
-        function drawSnakeBody(alpha) {
-            if (snake.length === 0) return;
-            // alpha: 0 = just ticked, 1 = about to tick next
-            // lerp each segment between prevSnake and snake positions
-            let pts = snake.map((seg, i) => {
-                let prev = prevSnake[i] || seg;
-                return {
-                    x: prev.x + (seg.x - prev.x) * alpha,
-                    y: prev.y + (seg.y - prev.y) * alpha
-                };
-            });
+            // --- Turn Detection & Sound Sync ---
+            let currentDirX = snake[0].x - snake[1].x;
+            let currentDirY = snake[0].y - snake[1].y;
+            let nextDirX = newHead.x - snake[0].x;
+            let nextDirY = newHead.y - snake[0].y;
 
-            // === Draw body: overlapping circles (back→front) — clean corners, no diagonal artifacts ===
-            for (let i = pts.length - 1; i >= 0; i--) {
-                let cx = pts[i].x + box / 2;
-                let cy = pts[i].y + box / 2;
-
-                // 🔥 TAPER: মাথায় মোটা, লেজে চিকন
-                // r must be > box/2 so adjacent circles overlap and fill gaps/corners
-                let ratio = 1 - (i / Math.max(snake.length - 1, 1));
-                let r;
-                if (i === 0) {
-                    r = HEAD_SIZE / 2;
-                } else {
-                    r = box * (0.35 + ratio * 0.17); // tail≈0.35, neck≈0.52
-                }
-
-                // 🎨 GRADIENT: bright at head, dark at tail
-                let hue = 217;
-                let sat = 90;
-                let light = Math.floor(25 + ratio * 40);
-
-                ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
-                ctx.beginPath();
-                ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Jump flash effect
-                if (jumpFlashTimer > 0 && i < 3) {
-                    ctx.fillStyle = `rgba(255, 215, 0, ${jumpFlashTimer / 10})`;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, r + 4, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
+            // যদি সাপ দিক পরিবর্তন করে, তবেই বাটন এনিমেশন এবং টিক সাউন্ড হবে (মানুষের মতো)
+            if (currentDirX !== nextDirX || currentDirY !== nextDirY) {
+                highlightDpad(nextDirX, nextDirY);
+                playClickSound();
             }
 
-            // === Draw head details ===
-            let hx = pts[0].x + box / 2;
-            let hy = pts[0].y + box / 2;
-            let headDir = d || 'RIGHT';
+            if (newHead.x < 0 || newHead.x >= tileCount || newHead.y < 0 || newHead.y >= tileCount) { handleGameOver(); return; }
 
-            // Determine eye positions based on direction
-            let eye1x, eye1y, eye2x, eye2y;
-            let eyeR = 5, pupilR = 2.5;
+            let foodIndex = foods.findIndex(f => f.x === newHead.x && f.y === newHead.y);
+            let willGrow = (foodIndex !== -1);
+            let checkLen = willGrow ? snake.length : snake.length - 1;
 
-            if (headDir === 'RIGHT') {
-                eye1x = hx + 6; eye1y = hy - 6;
-                eye2x = hx + 6; eye2y = hy + 6;
-            } else if (headDir === 'LEFT') {
-                eye1x = hx - 6; eye1y = hy - 6;
-                eye2x = hx - 6; eye2y = hy + 6;
-            } else if (headDir === 'UP') {
-                eye1x = hx - 6; eye1y = hy - 6;
-                eye2x = hx + 6; eye2y = hy - 6;
-            } else {
-                eye1x = hx - 6; eye1y = hy + 6;
-                eye2x = hx + 6; eye2y = hy + 6;
-            }
+            for (let i = 0; i < checkLen; i++) { if (newHead.x === snake[i].x && newHead.y === snake[i].y && snake.length > 3) { handleGameOver(); return; } }
 
-            if (isDead) {
-                // Dead eyes: X marks
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 2;
-                [{ x: eye1x, y: eye1y }, { x: eye2x, y: eye2y }].forEach(e => {
-                    ctx.beginPath();
-                    ctx.moveTo(e.x - 3, e.y - 3); ctx.lineTo(e.x + 3, e.y + 3);
-                    ctx.moveTo(e.x + 3, e.y - 3); ctx.lineTo(e.x - 3, e.y + 3);
-                    ctx.stroke();
-                });
-            } else {
-                // White eye circles
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(eye1x, eye1y, eyeR, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(eye2x, eye2y, eyeR, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Black pupils (slightly offset in direction)
-                let pOffX = 0, pOffY = 0;
-                if (headDir === 'RIGHT') pOffX = 1.5;
-                else if (headDir === 'LEFT') pOffX = -1.5;
-                else if (headDir === 'UP') pOffY = -1.5;
-                else pOffY = 1.5;
-
-                ctx.fillStyle = '#1a1a2e';
-                ctx.beginPath();
-                ctx.arc(eye1x + pOffX, eye1y + pOffY, pupilR, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(eye2x + pOffX, eye2y + pOffY, pupilR, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Blinking
-                if (isBlinking) {
-                    let headHue = isAutoMode ? 217 : 217;
-                    ctx.fillStyle = `hsl(${headHue}, 90%, 65%)`;
-                    ctx.beginPath();
-                    ctx.arc(eye1x, eye1y, eyeR, 0, 2 * Math.PI);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(eye2x, eye2y, eyeR, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
-            }
-        }
-
-        // Split draw() into update() (logic) and render(alpha) (visuals)
-        function render(alpha) {
-            for (let i = 0; i < rows; i++) {
-                for (let j = 0; j < cols; j++) {
-                    ctx.fillStyle = ((i + j) % 2 == 0) ? "#aad751" : "#a2d149";
-                    ctx.fillRect(i * box, j * box, box, box);
-                }
-            }
-
-            blinkTimer++;
-            if (blinkTimer > 60) {
-                isBlinking = true;
-                if (blinkTimer > 65) {
-                    isBlinking = false;
-                    blinkTimer = 0;
-                }
-            }
-
-            tongueExtend += tongueDirection * 0.5;
-            if (tongueExtend > 4 || tongueExtend < 0) {
-                tongueDirection *= -1;
-            }
-
-            // 🐍 Draw snake (Google style) with interpolation
-            drawSnakeBody(alpha);
-
-            // 🍎 Regular food (floating)
-            frameCount++;
-            superFoodPulse = Math.sin(frameCount * 0.15) * 0.3 + 0.7;
-
-            // Floating offsets
-            let foodBob = Math.sin(frameCount * 0.08) * 4;
-            let foodShadowAlpha = 0.18 + Math.sin(frameCount * 0.08 + Math.PI) * 0.08;
-
-            let fcx = food.x + box / 2;
-            let fcy = food.y + box / 2;
-
-            // Oval shadow
-            ctx.save();
-            ctx.scale(1, 0.4);
-            ctx.fillStyle = `rgba(0,0,0,${foodShadowAlpha})`;
-            ctx.beginPath();
-            ctx.arc(fcx, (fcy + box * 0.45) / 0.4, box / 3.5, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.restore();
-
-            // 🍎 Realistic Apple (floating)
-            {
-                let r = box / 2.2;
-                let ax = fcx;
-                let ay = fcy + foodBob;
-
-                // Oval ground shadow
-                ctx.save();
-                ctx.scale(1, 0.35);
-                ctx.fillStyle = `rgba(0,0,0,${foodShadowAlpha + 0.1})`;
-                ctx.beginPath();
-                ctx.arc(ax, (fcy + box * 0.48) / 0.35, r * 0.7, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.restore();
-
-                // Apple body — radial gradient: bright top-left highlight → deep red
-                let appleGrad = ctx.createRadialGradient(ax - r * 0.3, ay - r * 0.3, r * 0.1, ax, ay, r);
-                appleGrad.addColorStop(0, '#ff6b6b');   // bright highlight
-                appleGrad.addColorStop(0.4, '#e74c3c'); // mid red
-                appleGrad.addColorStop(1, '#8B0000');   // deep shadow edge
-                ctx.fillStyle = appleGrad;
-                ctx.beginPath();
-                ctx.arc(ax, ay, r, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Shine / specular highlight
-                let shineGrad = ctx.createRadialGradient(ax - r * 0.35, ay - r * 0.35, 0, ax - r * 0.2, ay - r * 0.2, r * 0.45);
-                shineGrad.addColorStop(0, 'rgba(255,255,255,0.55)');
-                shineGrad.addColorStop(1, 'rgba(255,255,255,0)');
-                ctx.fillStyle = shineGrad;
-                ctx.beginPath();
-                ctx.arc(ax, ay, r, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Stem (brown, slightly curved)
-                ctx.strokeStyle = '#5D3A1A';
-                ctx.lineWidth = 2.5;
-                ctx.lineCap = 'round';
-                ctx.beginPath();
-                ctx.moveTo(ax, ay - r + 1);
-                ctx.quadraticCurveTo(ax + 5, ay - r - 7, ax + 3, ay - r - 11);
-                ctx.stroke();
-
-                // Leaf
-                let leafGrad = ctx.createLinearGradient(ax + 1, ay - r - 10, ax + 11, ay - r - 3);
-                leafGrad.addColorStop(0, '#27ae60');
-                leafGrad.addColorStop(1, '#1a7a43');
-                ctx.fillStyle = leafGrad;
-                ctx.beginPath();
-                ctx.moveTo(ax + 3, ay - r - 9);
-                ctx.quadraticCurveTo(ax + 13, ay - r - 14, ax + 11, ay - r - 3);
-                ctx.quadraticCurveTo(ax + 2, ay - r - 4, ax + 3, ay - r - 9);
-                ctx.fill();
-                ctx.strokeStyle = '#1a7a43';
-                ctx.lineWidth = 0.8;
-                ctx.stroke();
-            }
-
-
-            // Super food spawn timer
-            if (!superFood && !isDead) {
-                superFoodSpawnTimer++;
-                if (superFoodSpawnTimer >= nextSuperFoodSpawn) {
-                    // Spawn super food at random empty position
-                    let sfPos;
-                    let attempts = 0;
-                    do {
-                        sfPos = {
-                            x: Math.floor(Math.random() * 17 + 1) * box,
-                            y: Math.floor(Math.random() * 15 + 3) * box
-                        };
-                        attempts++;
-                    } while ((collision(sfPos, snake) || (sfPos.x === food.x && sfPos.y === food.y)) && attempts < 100);
-                    if (attempts < 100) {
-                        superFood = sfPos;
-                        superFoodLifeTimer = 0;
-                    }
-                    resetSuperFoodTimer();
-                }
-            }
-
-            // Super food life timer & despawn
-            if (superFood) {
-                // lifeFrames: speed-dependent (slow = longer, fast = shorter)
-                // gameSpeed ms/tick → ticks/sec = 1000/gameSpeed
-                // duration in seconds: clamp(gameSpeed/15, 3, 15)
-                let lifeSec = Math.max(3, Math.min(15, gameSpeed / 15));
-                let lifeFrames = Math.round(lifeSec * (1000 / gameSpeed));
-                if (superFoodLifeTimer >= lifeFrames) {
-                    superFood = null; // Despawn
-                } else {
-                    // Draw golden pulsing star (floating)
-                    let sfx = superFood.x + box / 2;
-                    let sfBase = superFood.y + box / 2;
-                    let sfBob = Math.sin(frameCount * 0.1 + 1.5) * 4; // float offset, different phase
-                    let sfShadowA = 0.15 + Math.sin(frameCount * 0.1 + 1.5 + Math.PI) * 0.07;
-                    let sfy = sfBase + sfBob;
-                    let sfRadius = (box / 2) * superFoodPulse;
-
-                    // Oval shadow
-                    ctx.save();
-                    ctx.scale(1, 0.4);
-                    ctx.fillStyle = `rgba(180,130,0,${sfShadowA})`;
-                    ctx.beginPath();
-                    ctx.arc(sfx, (sfBase + box * 0.45) / 0.4, box / 3, 0, 2 * Math.PI);
-                    ctx.fill();
-                    ctx.restore();
-
-                    // ⭐ Super food: dark circular backdrop so star is visible
-                    ctx.fillStyle = 'rgba(20, 10, 0, 0.55)';
-                    ctx.beginPath();
-                    ctx.arc(sfx, sfy, box / 2 - 2, 0, 2 * Math.PI);
-                    ctx.fill();
-
-                    // Outer ring accent
-                    ctx.strokeStyle = 'rgba(255, 200, 0, 0.4)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(sfx, sfy, box / 2 - 3, 0, 2 * Math.PI);
-                    ctx.stroke();
-
-                    // Glow
-                    ctx.shadowColor = '#f1c40f';
-                    ctx.shadowBlur = 18;
-
-                    // Star shape
-                    ctx.fillStyle = '#FFD700';
-                    ctx.beginPath();
-                    for (let s = 0; s < 5; s++) {
-                        let outerAngle = (s * 4 * Math.PI / 5) - Math.PI / 2;
-                        let innerAngle = outerAngle + Math.PI / 5;
-                        ctx.lineTo(sfx + Math.cos(outerAngle) * sfRadius, sfy + Math.sin(outerAngle) * sfRadius);
-                        ctx.lineTo(sfx + Math.cos(innerAngle) * sfRadius * 0.42, sfy + Math.sin(innerAngle) * sfRadius * 0.42);
-                    }
-                    ctx.closePath();
-                    ctx.fill();
-
-                    // Inner shimmer
-                    ctx.fillStyle = '#fffbe6';
-                    ctx.shadowBlur = 0;
-                    ctx.beginPath();
-                    ctx.arc(sfx - sfRadius * 0.18, sfy - sfRadius * 0.18, sfRadius * 0.22, 0, 2 * Math.PI);
-                    ctx.fill();
-
-                    ctx.shadowBlur = 0;
-                    ctx.lineWidth = 1;
-
-                    // Timer bar
-                    let lifeSec2 = Math.max(3, Math.min(15, gameSpeed / 15));
-                    let lifeFrames2 = Math.round(lifeSec2 * (1000 / gameSpeed));
-                    let timeLeft = 1 - (superFoodLifeTimer / lifeFrames2);
-                    ctx.fillStyle = timeLeft > 0.3 ? '#2ecc71' : '#e74c3c';
-                    ctx.fillRect(superFood.x + 2, superFood.y + box - 4, (box - 4) * timeLeft, 3);
-                }
-            }
-
-            // Jump flash countdown
-            if (jumpFlashTimer > 0) jumpFlashTimer--;
-        } // end render()
-
-        function draw() {  // Game logic tick
-            // Save previous positions for smooth interpolation
-            prevSnake = snake.map(s => ({ x: s.x, y: s.y }));
-
-            // Tick super food life timer here (game ticks, not render frames)
-            if (superFood) superFoodLifeTimer++;
-
-
-            if (isDead) {
-                deathAnimationFrame++;
-
-                // 3 সেকেন্ড = 3000ms / gameSpeed = frames needed
-                // gameSpeed 80ms হলে: 3000/80 = 37.5 frames ≈ 38 frames
-                let totalFrames = Math.ceil(3000 / gameSpeed);
-                let countdown = Math.ceil((totalFrames - deathAnimationFrame) / (totalFrames / 3));
-
-                if (countdown > 0) {
-                    // কাউন্টডাউন টেক্সট দেখানো
-                    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    ctx.fillStyle = "white";
-                    ctx.font = "bold 48px Arial";
-                    ctx.textAlign = "center";
-                    ctx.fillText("💀 Game Over!", canvas.width / 2, canvas.height / 2 - 60);
-
-                    ctx.font = "32px Arial";
-                    ctx.fillText(`স্কোর: ${score}`, canvas.width / 2, canvas.height / 2 - 10);
-
-                    ctx.font = "bold 64px Arial";
-                    ctx.fillStyle = "#f1c40f";
-                    ctx.fillText(countdown, canvas.width / 2, canvas.height / 2 + 60);
-
-                    ctx.font = "20px Arial";
-                    ctx.fillStyle = "white";
-                    ctx.fillText("Restarting...", canvas.width / 2, canvas.height / 2 + 100);
-                }
-
-                if (deathAnimationFrame >= totalFrames) {
-                    isDead = false;
-                    deathAnimationFrame = 0;
-                    snake = [{ x: 9 * box, y: 10 * box }];
-                    prevSnake = [{ x: 9 * box, y: 10 * box }];
-                    score = 0;
-                    d = null;
-                    lastMoves = [];
-                    stuckCounter = 0;
-                    jumpPowers = 0;
-                    superFood = null;
-                    resetSuperFoodTimer();
-                    snakeSet.clear();
-                    snakeSet.add(snake[0].x + ',' + snake[0].y);
-                    document.getElementById("scoreBoard").innerText = "🍎 স্কোর: 0";
-                    document.getElementById("powerDisplay").innerText = "⚡ পাওয়ার: 0";
-                }
-                return;
-            }
-
-            if (isAutoMode) {
-                let aiMove = getAutoMove();
-                if (aiMove) d = aiMove;
-            }
-
-            let snakeX = snake[0].x;
-            let snakeY = snake[0].y;
-
-            if (d == "LEFT") snakeX -= box;
-            if (d == "UP") snakeY -= box;
-            if (d == "RIGHT") snakeX += box;
-            if (d == "DOWN") snakeY += box;
-
-            if (snakeX == food.x && snakeY == food.y) {
-                score++;
-                playEatSound();
-                document.getElementById("scoreBoard").innerText = "🍎 স্কোর: " + score;
-                food = {
-                    x: Math.floor(Math.random() * 17 + 1) * box,
-                    y: Math.floor(Math.random() * 15 + 3) * box
-                };
-                while (collision(food, snake)) {
-                    food = {
-                        x: Math.floor(Math.random() * 17 + 1) * box,
-                        y: Math.floor(Math.random() * 15 + 3) * box
-                    };
-                }
-            } else if (superFood && snakeX == superFood.x && snakeY == superFood.y) {
-                // ⭐ SUPER FOOD eaten!
-                if (jumpPowers < MAX_JUMP_POWERS) {
-                    jumpPowers++;
-                    document.getElementById("powerDisplay").innerText = "⚡ পাওয়ার: " + jumpPowers;
-                }
-                superFood = null;
-                resetSuperFoodTimer();
-                playEatSound();
-                score += 3; // Bonus score
-                document.getElementById("scoreBoard").innerText = "🍎 স্কোর: " + score;
-                snake.pop(); // Normal move, no growth from super food
-            } else {
-                snake.pop();
-            }
-
-            let newHead = { x: snakeX, y: snakeY };
-
-            // Wall collision = always die
-            if (snakeX < 0 || snakeX >= 19 * box || snakeY < 0 || snakeY >= 19 * box) {
-                isDead = true;
-                playGameOverSound();
-                return;
-            }
-
-            // Body collision = use jump power if available
-            if (collision(newHead, snake)) {
-                if (jumpPowers > 0) {
-                    // ⚡ JUMP! Pass through body
-                    jumpPowers--;
-                    jumpFlashTimer = 10;
-                    isJumping = true;
-                    document.getElementById("powerDisplay").innerText = "⚡ পাওয়ার: " + jumpPowers;
-                    let aiStatus = document.getElementById("aiStatus");
-                    aiStatus.textContent = "⚡ JUMP USED! Powers: " + jumpPowers;
-                } else {
-                    isDead = true;
-                    playGameOverSound();
-                    return;
-                }
-            } else {
-                isJumping = false;
-            }
-
-            // Update snakeSet after adding new head
-            snakeSet.clear();
-            for (let s of snake) snakeSet.add(s.x + ',' + s.y);
+            previousTail = { ...snake[snake.length - 1] }; ateFoodThisFrame = willGrow;
             snake.unshift(newHead);
-            snakeSet.add(newHead.x + ',' + newHead.y);
+
+            if (willGrow) {
+                playEatSound(); // খাবার খাওয়ার সাউন্ড
+                score += 10; movesWithoutEating = 0; scoreElement.innerText = `Score: ${score}`;
+                updateRank(); foods.splice(foodIndex, 1); placeFood();
+                if (targetWinScore > 0 && score >= targetWinScore) { handleWin(); return; }
+            } else {
+                snake.pop(); movesWithoutEating++;
+                if (movesWithoutEating >= loopTolerance) { handleWin(); return; }
+            }
         }
 
-        // requestAnimationFrame loop: render every frame at 60fps, tick logic at gameSpeed
-        let lastFrameTime = 0;
-        let lastTickTime = 0;
-        function gameLoop(timestamp) {
-            if (!lastFrameTime) { lastFrameTime = timestamp; lastTickTime = timestamp; }
+        function lerp(start, end, t) { return start + (end - start) * t; }
 
-            // Calculate interpolation alpha (0=just ticked, 1=about to tick)
-            let elapsed = timestamp - lastTickTime;
-            let alpha = Math.min(elapsed / gameSpeed, 1);
-
-            // Render every frame with interpolation
-            render(alpha);
-
-            // Tick game logic when enough time has passed
-            if (elapsed >= gameSpeed) {
-                lastTickTime = timestamp - (elapsed % gameSpeed);
-                draw();
+        function draw(progress, time) {
+            for (let r = 0; r < tileCount; r++) {
+                for (let c = 0; c < tileCount; c++) {
+                    ctx.fillStyle = (r + c) % 2 === 0 ? '#aad751' : '#a2d149'; ctx.fillRect(c * gridSize, r * gridSize, gridSize, gridSize);
+                }
+            }
+            let pulse = 1 + Math.sin(time / 200) * 0.05; let fRadius = (gridSize / 2.3) * pulse;
+            for (let food of foods) {
+                let fX = food.x * gridSize + gridSize / 2; let fY = food.y * gridSize + gridSize / 2;
+                ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(fX + 2, fY + 2, fRadius, 0, Math.PI * 2); ctx.fill();
+                let grad = ctx.createRadialGradient(fX - fRadius / 3, fY - fRadius / 3, fRadius / 8, fX, fY, fRadius);
+                grad.addColorStop(0, '#ff7675'); grad.addColorStop(0.5, '#d63031'); grad.addColorStop(1, '#8b0000');
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(fX, fY, fRadius, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#5c4033'; ctx.lineWidth = 2; ctx.lineCap = "round";
+                ctx.beginPath(); ctx.moveTo(fX, fY - fRadius + 2); ctx.lineTo(fX + 3, fY - fRadius - 5); ctx.stroke();
+                ctx.fillStyle = '#2ecc71'; ctx.beginPath(); ctx.ellipse(fX + 5, fY - fRadius - 2, 4, 2, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
             }
 
-            game = requestAnimationFrame(gameLoop);
+            let visSnake = [{ x: lerp(snake[1].x, snake[0].x, progress), y: lerp(snake[1].y, snake[0].y, progress) }];
+            for (let i = 1; i < snake.length; i++) visSnake.push({ x: snake[i].x, y: snake[i].y });
+            if (!ateFoodThisFrame && previousTail) { visSnake.push({ x: lerp(previousTail.x, snake[snake.length - 1].x, progress), y: lerp(previousTail.y, snake[snake.length - 1].y, progress) }); }
+
+            ctx.lineCap = "round"; ctx.lineJoin = "round";
+            for (let i = visSnake.length - 1; i >= 0; i--) {
+                let p1 = visSnake[i]; let drawX = p1.x * gridSize + gridSize / 2; let drawY = p1.y * gridSize + gridSize / 2;
+                let ratio = i / Math.max(1, visSnake.length - 1);
+                let r = Math.round(lerp(21, 150, ratio)); let g = Math.round(lerp(101, 200, ratio)); let b = Math.round(lerp(192, 250, ratio));
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`; ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+
+                let thicknessRatio = lerp(0.9, 0.3, ratio); let currentRadius = (gridSize / 2) * thicknessRatio;
+                if (i === 0) currentRadius *= 1.1;
+
+                ctx.beginPath(); ctx.arc(drawX, drawY, currentRadius, 0, Math.PI * 2); ctx.fill();
+
+                if (i > 0) {
+                    let p2 = visSnake[i - 1]; let drawX2 = p2.x * gridSize + gridSize / 2; let drawY2 = p2.y * gridSize + gridSize / 2;
+                    let nextRadius = (gridSize / 2) * lerp(0.9, 0.3, (i - 1) / Math.max(1, visSnake.length - 1));
+                    if (i - 1 === 0) nextRadius *= 1.1;
+                    ctx.lineWidth = currentRadius + nextRadius; ctx.beginPath(); ctx.moveTo(drawX, drawY); ctx.lineTo(drawX2, drawY2); ctx.stroke();
+                }
+                if (i === 0) {
+                    let dirX = snake[0].x - snake[1].x; let dirY = snake[0].y - snake[1].y;
+                    let tongueFlick = Math.abs(Math.sin(time / 150)) * 8;
+                    ctx.strokeStyle = '#ff4757'; ctx.lineWidth = 1.5; ctx.beginPath();
+                    let tStartX = drawX + (dirX * currentRadius); let tStartY = drawY + (dirY * currentRadius);
+                    ctx.moveTo(tStartX, tStartY); ctx.lineTo(tStartX + (dirX * tongueFlick), tStartY + (dirY * tongueFlick));
+                    ctx.lineTo(tStartX + (dirX * tongueFlick) + (dirY * 2), tStartY + (dirY * tongueFlick) + (dirX * 2));
+                    ctx.moveTo(tStartX + (dirX * tongueFlick), tStartY + (dirY * tongueFlick));
+                    ctx.lineTo(tStartX + (dirX * tongueFlick) - (dirY * 2), tStartY + (dirY * tongueFlick) - (dirX * 2)); ctx.stroke();
+
+                    let e1X, e1Y, e2X, e2Y; let offset = currentRadius * 0.5;
+                    if (dirX > 0) { e1X = drawX + offset / 2; e1Y = drawY - offset; e2X = drawX + offset / 2; e2Y = drawY + offset; }
+                    else if (dirX < 0) { e1X = drawX - offset / 2; e1Y = drawY - offset; e2X = drawX - offset / 2; e2Y = drawY + offset; }
+                    else if (dirY > 0) { e1X = drawX - offset; e1Y = drawY + offset / 2; e2X = drawX + offset; e2Y = drawY + offset / 2; }
+                    else { e1X = drawX - offset; e1Y = drawY - offset / 2; e2X = drawX + offset; e2Y = drawY - offset / 2; }
+                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(e1X, e1Y, 3.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(e2X, e2Y, 3.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#2f3640'; ctx.beginPath(); ctx.arc(e1X + (dirX * 1.5), e1Y + (dirY * 1.5), 2, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(e2X + (dirX * 1.5), e2Y + (dirY * 1.5), 2, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(e1X + (dirX * 1.5) - 0.5, e1Y + (dirY * 1.5) - 0.5, 0.8, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(e2X + (dirX * 1.5) - 0.5, e2Y + (dirY * 1.5) - 0.5, 0.8, 0, Math.PI * 2); ctx.fill();
+                }
+            }
         }
-        game = requestAnimationFrame(gameLoop);
+
+        function gameLoop(time) {
+            requestAnimationFrame(gameLoop);
+
+            if (gameState === 'GAMEOVER' || gameState === 'WIN') {
+                let passed = Math.floor((Date.now() - screenTimestamp) / 1000);
+                screenTimeLeft = 5 - passed;
+                draw(1, time);
+                ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = gameState === 'WIN' ? "#f1c40f" : "#e74c3c";
+                ctx.font = "bold 36px Arial"; ctx.textAlign = "center";
+                ctx.fillText(gameState === 'WIN' ? "YOU WIN!" : "GAME OVER", canvas.width / 2, canvas.height / 2 - 30);
+
+                ctx.fillStyle = "white"; ctx.font = "20px Arial";
+                ctx.fillText(`Score: ${score}  |  High Score: ${highestScore}`, canvas.width / 2, canvas.height / 2 + 10);
+
+                ctx.fillStyle = "#8ab4f8"; ctx.font = "18px Arial";
+                ctx.fillText(`Restarting in ${screenTimeLeft}s...`, canvas.width / 2, canvas.height / 2 + 50);
+
+                if (screenTimeLeft <= 0) initGame();
+                return;
+            }
+
+            if (!lastTime) lastTime = time; let deltaTime = time - lastTime; lastTime = time;
+            let fps = parseInt(speedSlider.value); let logicDelay = 1000 / fps;
+
+            if (gameState === 'PAUSED') {
+                draw(1, time);
+                ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white"; ctx.font = "bold 30px Arial"; ctx.textAlign = "center";
+                ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            logicAccumulator += deltaTime;
+            if (logicAccumulator > 1000) logicAccumulator = logicDelay;
+
+            while (logicAccumulator >= logicDelay) { update(); logicAccumulator -= logicDelay; }
+            draw(logicAccumulator / logicDelay, time);
+        }
+
+        initGame(); requestAnimationFrame(gameLoop);
+
     </script>
 </body>
 
