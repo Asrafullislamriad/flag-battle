@@ -1,8 +1,9 @@
-const CACHE_NAME = 'arcade-hub-v1';
+const CACHE_NAME = 'arcade-hub-v2';
 const ASSETS_TO_CACHE = [
-  '/game%20hub/index.html',
-  '/game%20hub/manifest.json',
-  '/game%20hub/games/football_game/assets/ball.png'
+  '/flag-battle/',
+  '/flag-battle/index.html',
+  '/flag-battle/manifest.json',
+  '/flag-battle/games/football_game/assets/ball.png'
 ];
 
 // Install event - caching assets

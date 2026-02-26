@@ -2,7 +2,7 @@
   "name": "Arcade Hub",
   "short_name": "ArcadeHub",
   "description": "Your ultimate destination for interactive streams and classic browser games.",
-  "start_url": "/game%20hub/index.html",
+  "start_url": "/flag-battle/index.html",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#e74c3c",
